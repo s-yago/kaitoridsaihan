@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ViVi不動産 買取物件 取り込みツール</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f4ef;--card:#fff;--line:#e3e1d8;--line2:#cfcdc2;
+    --text:#2c2c2a;--muted:#6f6e68;--hint:#9a988e;
+    --blue:#185fa5;--blue-bg:#e6f1fb;--green:#3b6d11;--green-bg:#eaf3de;
+    --amber:#854f0b;--red:#a32d2d;--radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Meiryo",sans-serif;background:var(--bg);color:var(--text);padding:20px;line-height:1.7}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:22px;font-weight:600;margin-bottom:4px}
+  .sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+  .drop{border:2px dashed var(--line2);border-radius:var(--radius);padding:36px 20px;text-align:center;background:#fff;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:18px}
+  .drop:hover,.drop.over{border-color:var(--blue);background:var(--blue-bg)}
+  .drop .big{font-size:16px;font-weight:600;margin-top:8px}
+  .drop .small{font-size:13px;color:var(--muted);margin-top:4px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px}
+  .card h2{font-size:15px;font-weight:600;margin-bottom:12px}
+  .field{margin-bottom:10px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+  .field input,.field select{width:100%;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:#fff;color:var(--text)}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--blue)}
+  .row2{display:flex;gap:10px}
+  .row2 .field{flex:1}
+  .btn{font-family:inherit;font-size:14px;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-weight:600}
+  .btn.primary{background:var(--blue);color:#fff}
+  .btn.primary:hover{opacity:.9}
+  .btn.ghost{background:#fff;border:1px solid var(--line2);color:var(--text)}
+  .btn.ghost:hover{background:var(--bg)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .hint{font-size:12px;color:var(--hint);margin-top:8px}
+  .ok{color:var(--green);font-weight:600}
+  .err{color:var(--red);font-size:13px;margin-top:8px}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;background:var(--blue-bg);color:var(--blue);margin-left:6px}
+  .copied{font-size:13px;color:var(--green);font-weight:600;margin-left:8px}
+  .colnote{font-size:12px;color:var(--muted);background:var(--bg);border-radius:8px;padding:10px 12px;margin-top:12px}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>買取物件 取り込みツール</h1>
+  <div class="sub">ハトサポの契約台帳PDFを読み込み、買取再販ボード用のデータに変換します。</div>
+
+  <label class="drop" id="drop">
+    <div style="font-size:30px">📄</div>
+    <div class="big">ハトサポPDFをドラッグ＆ドロップ</div>
+    <div class="small">またはクリックしてファイルを選択</div>
+    <input type="file" id="file" accept=".pdf" class="hidden">
+  </label>
+  <div class="err" id="err"></div>
+
+  <div class="card hidden" id="result">
+    <h2>読み取り結果 <span class="badge">確認・修正できます</span></h2>
+    <div class="field">
+      <label>種別</label>
+      <select id="f_type"><option>土地</option><option>戸建て</option><option>マンション</option><option>その他</option></select>
+    </div>
+    <div class="field" id="wrap_name">
+      <label>物件名（土地・戸建て・その他のとき）</label>
+      <input id="f_name" placeholder="例：新庄戸建て">
+    </div>
+    <div class="row2" id="wrap_mansion">
+      <div class="field">
+        <label>マンション名</label>
+        <input id="f_mansion" placeholder="例：桜町マンション">
+      </div>
+      <div class="field" style="flex:0 0 120px">
+        <label>部屋番号</label>
+        <input id="f_room" placeholder="例：302">
+      </div>
+    </div>
+    <div class="field">
+      <label>住所</label>
+      <input id="f_addr" placeholder="例：富山市桜町">
+    </div>
+    <div class="field">
+      <label>取得価格（円）</label>
+      <input id="f_price" inputmode="numeric" placeholder="例：11800000">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>買取契約日</label>
+        <input id="f_contract" type="date">
+      </div>
+      <div class="field">
+        <label>残金決済日</label>
+        <input id="f_settle" type="date">
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:14px">
+      <button class="btn primary" id="copy">スプレッドシートにコピー</button>
+      <button class="btn ghost" id="reset">別のPDFを読む</button>
+      <span class="copied hidden" id="copied">✓ コピーしました。スプレッドシートに貼り付けてください</span>
+    </div>
+    <div class="colnote">
+      コピーされるのは <b>種別・物件名・マンション名・部屋番号・住所</b> と <b>取得価格・買取契約日・残金決済日</b>（間の手入力列は空）です。スプレッドシートの空いている行の<b>A列</b>を選んで貼り付け（Ctrl+V）してください。担当・フェーズ・リノベ費などは貼り付け後に直接ご記入ください。
+    </div>
+  </div>
+
+  <div class="hint">
+    ※ このツールはPDFを読み取るだけで、データはどこにも送信されません（すべてブラウザ内で処理されます）。
+  </div>
+</div>
+
+<script>
+// ===== 残金決済ツールの parseHatoText をそのまま流用 =====
+function parseHatoText(lines, text){
+  const result={};
+  const ST={name:'',addr:'',dairiName:'',dairiAddr:''};
+  const BT={name:'',addr:'',dairiName:''};
+
+  const roleBlocks=[];
+  const roleReg=/(売\s*主|買\s*主)(?=本人|代理人)/g;
+  let rm;
+  while((rm=roleReg.exec(text))!==null){
+    roleBlocks.push({pos:rm.index,role:rm[1].includes('売')?'seller':'buyer'});
+  }
+  const personEntries=roleBlocks.map((b,i)=>{
+    const end=i+1<roleBlocks.length?roleBlocks[i+1].pos:b.pos+400;
+    const block=text.slice(b.pos,end);
+    const hm=block.match(/本人([^住]{0,60}?)住所\s*TEL/);
+    const dm=block.match(/代理人([^住]{0,60}?)住所\s*TEL/);
+    return{role:b.role,name:(hm?hm[1].trim():''),dairiName:(dm?dm[1].trim():'')};
+  });
+  const sellerEntries=personEntries.filter(e=>e.role==='seller');
+  const buyerEntries=personEntries.filter(e=>e.role==='buyer');
+  const sellerNames=sellerEntries.map(e=>e.name);
+
+  const markerReg=/VPB_a-T([SB])-(\d+)_f/g;
+  const tsMarkers=[];const tbMarkers=[];
+  let mm;
+  while((mm=markerReg.exec(text))!==null){
+    const entry={idx:parseInt(mm[2]),pos:mm.index,end:mm.index+mm[0].length};
+    if(mm[1]==='S') tsMarkers.push(entry);
+    else tbMarkers.push(entry);
+  }
+  tsMarkers.sort((a,b)=>a.idx-b.idx);
+  tbMarkers.sort((a,b)=>a.idx-b.idx);
+
+  const getAddr=(pos)=>{
+    const m=text.slice(pos).match(/(.+?)(?:運転免許証|VPB_)/);
+    return m?m[1].trim():'';
+  };
+
+  const ts0pos=text.indexOf('VPB_a-TS-0_f');
+  const before=ts0pos>=0?text.slice(0,ts0pos):'';
+  const s1m=before.match(/媒介\(両手\)\s*代理(.+?)運転免許証/);
+  const sellerAddr1=s1m?s1m[1].trim():'';
+  const sellerAddrs=[sellerAddr1];
+  const sellerTSCount=Math.max(0,sellerNames.length-1);
+  tsMarkers.slice(0,sellerTSCount).forEach(m=>sellerAddrs.push(getAddr(m.end)));
+
+  result.sellers=sellerEntries.map((e,i)=>({...ST,name:e.name,addr:sellerAddrs[i]||'',dairiName:e.dairiName,dairiAddr:''}));
+  if(result.sellers.length===0) result.sellers=[{...ST}];
+  result.sellers.forEach(s=>{
+    if(!s.name&&s.dairiName){s.name=s.dairiName;s.dairiAddr=s.addr;s.addr='';}
+  });
+
+  const mansionM=text.match(/VPB_bt-top-001_f(.+?)区分所有建物/);
+  if(mansionM) result.mansionName=mansionM[1].trim();
+  const roomM=text.match(/(\d+号室)/);
+  if(roomM) result.roomNo=roomM[1];
+
+  const vbt2pos=text.indexOf('VPB_bt-top-002_f');
+  const addrTarget=vbt2pos>=0?text.slice(vbt2pos):text;
+  const addrBM=addrTarget.match(/その他補足事項(.+?)(?:居宅|共同住宅|店舗|事務所|工場|倉庫|居住中)/);
+  if(addrBM){
+    const block=addrBM[1].trim();
+    if(block.includes('実施区域外')||block.includes('未実施')){
+      const sm=block.match(/^(.+?)(?:（住居表示|\(住居表示)/);
+      if(sm){
+        const t=sm[1].trim();
+        const half=Math.floor(t.length/2);
+        result.address=(t.slice(0,half)===t.slice(half)?t.slice(0,half):t).trim();
+      }
+    } else {
+      const parts=block.split(/(?<=[号室])\s*(?=[^\s])/);
+      parts.forEach(p=>{
+        if((p.includes('番地')||(/番\d/.test(p)))&&!result.address) result.address=p.trim();
+        else if((p.endsWith('号')||p.includes('号室'))&&!result.addressJukyo&&!p.includes('実施区域外')) result.addressJukyo=p.trim();
+      });
+    }
+  }
+  if(!result.address&&!result.addressJukyo){
+    const mBlockM=text.match(/その他補足事項(.+?)居住中/);
+    if(mBlockM){
+      const block=mBlockM[1].trim();
+      const jukyoM=block.match(/^(.+?号)/);
+      const sozaiM=block.match(/([^\s]+(?:番地\d*|番\d+)[^\s]*)/g);
+      if(jukyoM&&!jukyoM[1].includes('実施区域外')) result.addressJukyo=jukyoM[1].trim();
+      if(sozaiM) result.address=sozaiM[sozaiM.length-1].trim();
+    }
+  }
+  if(!result.address){
+    const sozaiM2=text.match(/所在・地番\s+([^\s].+?)(?:\s+地目|\s+登記簿)/);
+    if(sozaiM2) result.address=sozaiM2[1].trim();
+  }
+  if(!result.address&&result.addressJukyo) result.address=result.addressJukyo;
+
+  const pm=text.match(/(?:売買金額総額|代金総額)\s*([\d,]+)円/);
+  if(pm) result.salePrice=parseInt(pm[1].replace(/,/g,''));
+
+  // 契約日・残金決済日（残金決済ツールの日付ロジックを流用）
+  const dc=(t,y,m,d)=>{let yr=parseInt(y);if(t==='令和')yr+=2018;else if(t==='平成')yr+=1988;else if(t==='昭和')yr+=1925;return `${yr}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;};
+  const km=text.match(/契約成立日\s*(令和|平成|昭和)?\s*(\d+)年\s*(\d+)月\s*(\d+)日/);
+  if(km) result.contractDate=dc(km[1],km[2],km[3],km[4]);
+  const wm=text.match(/引渡日\s*(令和|平成|昭和)?\s*(\d+)年\s*(\d+)月\s*(\d+)日/);
+  if(wm) result.settlementDate=dc(wm[1],wm[2],wm[3],wm[4]);
+
+  if(text.includes('区分所有建物')) result.propType='マンション';
+  else if(text.includes('土地建物売買')||text.includes('土地建物')) result.propType='戸建';
+  else if(text.includes('土地売買')||text.includes('土地のみ')) result.propType='土地';
+
+  return result;
+}
+
+// ===== 残金決済ツールの種別表記 → 買取再販ボードの種別表記に変換 =====
+function mapType(propType, text){
+  if(propType==='マンション') return 'マンション';
+  if(propType==='戸建') return '戸建て';
+  if(propType==='土地') return '土地';
+  // 判定できないものは「その他」（アパート・店舗・工場など）
+  return 'その他';
+}
+
+const $=id=>document.getElementById(id);
+const drop=$('drop'),fileInput=$('file');
+
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+fileInput.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
+
+function handleFile(file){
+  $('err').textContent='';
+  if(!file.name.toLowerCase().endsWith('.pdf')){$('err').textContent='PDFファイルを選んでください。';return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const pdfjsLib=window['pdfjs-dist/build/pdf'];
+      pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+      pdfjsLib.getDocument({data:ev.target.result}).promise.then(pdf=>{
+        pdf.getPage(1).then(page=>{
+          page.getTextContent().then(tc=>{
+            const fullText=tc.items.map(i=>i.str).join('').replace(/\n/g,' ').replace(/\r/g,' ');
+            const parsed=parseHatoText([fullText],fullText);
+            fillForm(parsed,fullText);
+          });
+        });
+      }).catch(err=>{$('err').textContent='PDFの読み込みに失敗しました：'+err.message;});
+    }catch(err){$('err').textContent='エラー：'+err.message;}
+  };
+  reader.readAsArrayBuffer(file);
+  fileInput.value='';
+}
+
+function fillForm(p,text){
+  const type=mapType(p.propType,text);
+  $('f_type').value=type;
+  // 物件名：マンション以外は売主物件として「住所」や空欄を提示。物件名はPDFに明確な項目がないため住所ベースの候補を入れる
+  $('f_name').value = (type==='マンション') ? '' : (p.mansionName||'');
+  $('f_mansion').value=p.mansionName||'';
+  $('f_room').value=(p.roomNo||'').replace('号室','').replace('号','');
+  $('f_addr').value=p.address||p.addressJukyo||'';
+  $('f_price').value=p.salePrice||'';
+  $('f_contract').value=p.contractDate||'';
+  $('f_settle').value=p.settlementDate||'';
+  toggleTypeFields();
+  $('result').classList.remove('hidden');
+  $('copied').classList.add('hidden');
+  $('result').scrollIntoView({behavior:'smooth'});
+}
+
+function toggleTypeFields(){
+  const isM=$('f_type').value==='マンション';
+  $('wrap_mansion').style.display=isM?'flex':'none';
+  $('wrap_name').style.display=isM?'none':'block';
+}
+$('f_type').addEventListener('change',toggleTypeFields);
+
+$('copy').addEventListener('click',()=>{
+  const type=$('f_type').value;
+  const name=type==='マンション'?'':$('f_name').value.trim();
+  const mansion=type==='マンション'?$('f_mansion').value.trim():'';
+  const room=type==='マンション'?$('f_room').value.trim():'';
+  const addr=$('f_addr').value.trim();
+  const price=($('f_price').value||'').replace(/[^0-9]/g,'');
+  const contract=$('f_contract').value||'';
+  const settle=$('f_settle').value||'';
+  // ボードの列順: 種別,物件名,マンション名,部屋番号,住所,担当,フェーズ,取得価格,リノベ予算,リノベ実績,諸経費,売出価格,成約価格,フェーズ更新日,買取契約日,残金決済日
+  // PDFから入るのは種別〜取得価格と末尾2日付。間の手入力列(I〜N)は空で埋め、O/P列に日付を届ける
+  const row=[type,name,mansion,room,addr,'','仕入検討',price,'','','','','','',contract,settle].join('\t');
+  navigator.clipboard.writeText(row).then(()=>{
+    $('copied').classList.remove('hidden');
+  }).catch(()=>{
+    // クリップボードAPIが使えない場合のフォールバック
+    const ta=document.createElement('textarea');ta.value=row;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');$('copied').classList.remove('hidden');}catch(e){$('err').textContent='コピーに失敗しました。手動でコピーしてください：'+row;}
+    document.body.removeChild(ta);
+  });
+});
+
+$('reset').addEventListener('click',()=>{
+  $('result').classList.add('hidden');
+  $('err').textContent='';
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+drop.addEventListener('click',()=>fileInput.click());
+</script>
+</body>
+</html>
