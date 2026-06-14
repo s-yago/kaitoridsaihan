@@ -62,6 +62,14 @@
   .setup p{font-size:13px;color:var(--muted);margin-bottom:12px}
   .setup .field{display:flex;gap:8px;flex-wrap:wrap}
   .setup input{flex:1;min-width:240px;border:1px solid var(--line2);border-radius:8px;padding:9px 12px}
+  .help{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;line-height:1.8}
+  .help h2{font-size:17px;font-weight:600;margin-bottom:8px;color:var(--blue)}
+  .help h3{font-size:14px;font-weight:600;margin:16px 0 6px;padding-left:10px;border-left:3px solid var(--blue)}
+  .help p{font-size:13px;color:var(--text);margin-bottom:8px}
+  .help p.lead{color:var(--muted)}
+  .help p.note{background:var(--red-bg);color:var(--red);border-radius:8px;padding:8px 12px;font-weight:600}
+  .help ol,.help ul{font-size:13px;color:var(--text);margin:0 0 8px;padding-left:22px}
+  .help li{margin-bottom:6px}
   .empty{text-align:center;color:var(--hint);font-size:13px;padding:30px 0}
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
   .modal-bg.show{display:flex}
@@ -96,6 +104,7 @@
       <a class="btn" href="https://docs.google.com/spreadsheets/d/1vQhsiTwDX3eY2KeBdBI24w2aEKOlsViBlgJ5qtWGy_g/edit" target="_blank" rel="noopener" style="text-decoration:none">スプレッドシート</a>
       <a class="btn" href="https://s-yago.github.io/kaitoridsaihan/import.html" target="_blank" rel="noopener" style="text-decoration:none">PDF取り込み</a>
       <button class="btn" onclick="reload()">再読み込み</button>
+      <button class="btn" onclick="toggleHelp()">使い方</button>
       <button class="btn" onclick="toggleSetup()">設定</button>
     </div>
   </header>
@@ -108,6 +117,35 @@
       <button class="btn primary" onclick="saveUrl()">読み込む</button>
     </div>
     <div class="err" id="err"></div>
+  </div>
+
+  <div class="help" id="help" style="display:none">
+    <h2>このボードの使い方</h2>
+    <p class="lead">物件を買い取って売るまでの進み具合と、いくら儲かるかを、一目で見るための画面です。データの入力はスプレッドシートで行い、この画面はそれを見やすく表示します（この画面から直接の書き換えはできません）。</p>
+
+    <h3>物件を1件追加するとき</h3>
+    <ol>
+      <li><b>PDFを読み取る</b>：上の「PDF取り込み」ボタンを押して取り込みツールを開き、ハトサポの契約台帳PDFを枠にドラッグ＆ドロップします。種別・物件名・住所・取得価格・買取契約日・残金決済日が自動で読み取られます。内容を確認し、必要なら直して「スプレッドシートにコピー」を押します。</li>
+      <li><b>スプレッドシートに貼る</b>：「スプレッドシートを開く」ボタンでシートを開き、空いている行のいちばん左（A列）をクリックして貼り付け（Ctrl+V）します。これで1件追加されます。</li>
+      <li><b>残りを記入する</b>：PDFにない項目（担当・リノベ予算・リノベ実績・諸経費・売出価格・成約価格）を手で入力します。フェーズ（進み具合）は、その列のセルをクリックすると出るプルダウンから選びます。</li>
+    </ol>
+
+    <h3>物件が進んだとき</h3>
+    <p>スプレッドシートでその物件のフェーズをプルダウンで選び直し、「フェーズ更新日」を今日の日付に書き換えます。売れたら成約価格を入れて、フェーズを「売却完了」にします。</p>
+
+    <h3>この画面の見方</h3>
+    <ul>
+      <li><b>上の数字</b>：進行中の件数、いま抱えている在庫金額、売却完了した物件の累計利益、平均利益率、要注意の件数。</li>
+      <li><b>7つの列</b>：左から 仕入検討 → 買取契約 → 移転完了 → リノベ中 → 販売中 → 契約済 → 売却完了。物件はフェーズの列に並びます。</li>
+      <li><b>カードの色帯</b>：物件の種別を表します（土地=緑、戸建て=オレンジ、マンション=青、その他=赤）。</li>
+      <li><b>赤いバッジ</b>：「予算超過」はリノベ費が予算を超えたとき。「○日停滞」は販売中・契約済のまま長く動いていないとき。会議で注意すべき物件がひと目で分かります。</li>
+      <li><b>カードをクリック</b>：取得価格・リノベ費・粗利・買取契約日・残金決済日などの明細が開きます。</li>
+    </ul>
+
+    <h3>注意</h3>
+    <p class="note">この画面のリンクには取得価格や利益などの社内情報が含まれます。社外の人には共有しないでください。</p>
+
+    <div style="text-align:right"><button class="btn" onclick="toggleHelp()">閉じる</button></div>
   </div>
 
   <div class="filter" id="filter"></div>
@@ -295,6 +333,7 @@ function saveUrl(){const u=document.getElementById("csvUrl").value.trim();
 function reload(){const u=localStorage.getItem("baikai_csv_url");if(u)loadFromUrl(u);else{DATA=SAMPLE;render()}}
 function toggleSetup(){const s=document.getElementById("setup");s.style.display=s.style.display==="none"?"block":"none";
   const u=localStorage.getItem("baikai_csv_url");if(u)document.getElementById("csvUrl").value=u;}
+function toggleHelp(){const h=document.getElementById("help");h.style.display=h.style.display==="none"?"block":"none";}
 
 (function init(){
   const u=localStorage.getItem("baikai_csv_url");
