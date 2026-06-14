@@ -23,8 +23,11 @@
   .drop .big{font-size:16px;font-weight:600;margin-top:12px}
   .drop .small{font-size:13px;color:var(--muted);margin-top:4px}
   .topnav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .navbtns{display:flex;gap:8px;flex-wrap:wrap}
   .navbtn{font-size:13px;font-weight:600;color:#fff;background:var(--blue);text-decoration:none;border-radius:8px;padding:8px 16px;white-space:nowrap}
   .navbtn:hover{opacity:.9}
+  .navbtn.ghost{background:#fff;color:var(--blue);border:1px solid var(--line2)}
+  .navbtn.ghost:hover{background:var(--blue-bg);opacity:1}
   .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px}
   .card h2{font-size:15px;font-weight:600;margin-bottom:12px}
   .field{margin-bottom:10px}
@@ -52,7 +55,10 @@
 <div class="wrap">
   <div class="topnav">
     <h1>買取物件 取り込みツール</h1>
-    <a class="navbtn" href="https://s-yago.github.io/kaitoridsaihan/">会議画面を開く</a>
+    <div class="navbtns">
+      <a class="navbtn" href="https://docs.google.com/spreadsheets/d/1vQhsiTwDX3eY2KeBdBI24w2aEKOlsViBlgJ5qtWGy_g/edit" target="_blank" rel="noopener">スプレッドシートを開く</a>
+      <a class="navbtn ghost" href="https://s-yago.github.io/kaitoridsaihan/">会議画面を開く</a>
+    </div>
   </div>
   <div class="sub">ハトサポの契約台帳PDFを読み込み、買取再販ボード用のデータに変換します。</div>
 
