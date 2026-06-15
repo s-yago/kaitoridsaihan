@@ -340,7 +340,9 @@ $('copy').addEventListener('click',()=>{
   const settle=$('f_settle').value||'';
   // ボードの列順: 種別,物件名,マンション名,部屋番号,住所,担当,フェーズ,取得価格,リノベ予算,リノベ実績,諸経費,売出価格,成約価格,フェーズ更新日,買取契約日,残金決済日
   // PDFから入るのは種別〜取得価格と末尾2日付。間の手入力列(I〜N)は空で埋め、O/P列に日付を届ける
-  const row=[type,name,mansion,room,addr,'','仕入検討',price,'','','','','','',contract,settle].join('\t');
+  // 列順: …フェーズ更新日,買取契約日,残金決済日,リノベ開始日,リノベ完了日,販売開始日,売却完了日(計20列)
+  // 工期4日付はPDFにないので空欄。貼り付け後にスプレッドシートで記入。
+  const row=[type,name,mansion,room,addr,'','仕入検討',price,'','','','','','',contract,settle,'','','',''].join('\t');
   navigator.clipboard.writeText(row).then(()=>{
     $('copied').classList.remove('hidden');
   }).catch(()=>{
