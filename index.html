@@ -103,6 +103,11 @@
   .modal .close{margin-top:16px;width:100%}
   .err{color:var(--red);font-size:13px;margin-top:8px}
   .updated{font-size:12px;color:var(--hint)}
+  .schedule-bar{background:var(--red-bg);border:1px solid var(--red);border-radius:10px;padding:9px 16px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .schedule-bar .sb-title{color:var(--red);font-weight:700;font-size:12px;white-space:nowrap}
+  .schedule-bar .sb-flow{color:var(--red);font-size:13px;line-height:1.7}
+  .schedule-bar .sb-flow b{font-weight:700}
+  .schedule-bar .sb-flow i{color:var(--red);opacity:.5;font-style:normal;margin:0 5px}
   .filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
   .chip{background:#fff;border:1px solid var(--line2);border-radius:9999px;padding:7px 14px;cursor:pointer;color:var(--text);display:inline-flex;align-items:center;gap:7px;font-size:13px}
   .chip:hover{background:var(--gray-bg)}
@@ -128,6 +133,13 @@
       <button class="btn" onclick="toggleSetup()">設定</button>
     </div>
   </header>
+
+  <div class="schedule-bar">
+    <span class="sb-title">日程基準（仕入決済日を起点／180日以内に売却完了）</span>
+    <span class="sb-flow">
+      <b>決済 0日</b><i>→</i>リノベ完了 <b>30日</b><i>→</i>販売開始 <b>37日</b><i>→</i>価格改定① <b>70日</b><i>→</i>価格改定② <b>100日</b><i>→</i>再販契約 <b>130日</b><i>→</i>売却完了 <b>180日</b>（最終期限）
+    </span>
+  </div>
 
   <div class="setup" id="setup">
     <h2>スプレッドシートのリンクを設定</h2>
