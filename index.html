@@ -597,13 +597,16 @@ function rowsToObjects(rows){
 
 function loadFromUrl(url){
   document.getElementById("err").textContent="読み込み中...";
-  // キャッシュ回避：URLに毎回違う値を付け、ブラウザにも再取得を指示
-  const bust=(url.indexOf("?")>=0?"&":"?")+"_ts="+Date.now();
-  fetch(url+bust,{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text()})
+  // キャッシュ回避を強化：時刻＋乱数の二重の印を付け、ブラウザにも完全な再取得を指示
+  const bust=(url.indexOf("?")>=0?"&":"?")+"_ts="+Date.now()+"_r="+Math.random().toString(36).slice(2);
+  fetch(url+bust,{cache:"reload",headers:{"Cache-Control":"no-cache","Pragma":"no-cache"}})
+    .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text()})
     .then(t=>{const objs=rowsToObjects(parseCSV(t));
       if(!objs.length)throw new Error("データが空、または1行目に「物件名」列が見つかりません");
       DATA=objs;document.getElementById("err").textContent="";render();
-      document.getElementById("setup").style.display="none";})
+      document.getElementById("setup").style.display="none";
+      const u=document.getElementById("updated");
+      if(u)u.textContent="最終更新 "+new Date().toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"});})
     .catch(e=>{document.getElementById("err").textContent="読み込み失敗: "+e.message+"（公開設定・列名をご確認ください）";});
 }
 
