@@ -597,7 +597,9 @@ function rowsToObjects(rows){
 
 function loadFromUrl(url){
   document.getElementById("err").textContent="読み込み中...";
-  fetch(url).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text()})
+  // キャッシュ回避：URLに毎回違う値を付け、ブラウザにも再取得を指示
+  const bust=(url.indexOf("?")>=0?"&":"?")+"_ts="+Date.now();
+  fetch(url+bust,{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text()})
     .then(t=>{const objs=rowsToObjects(parseCSV(t));
       if(!objs.length)throw new Error("データが空、または1行目に「物件名」列が見つかりません");
       DATA=objs;document.getElementById("err").textContent="";render();
