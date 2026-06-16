@@ -389,19 +389,27 @@ function needsPriceReview(p){
 function renderGantt(){
   const el=document.getElementById("gantt");
   const view=visible().filter(p=>p.フェーズ!=="仕入検討"||pdate(p.買取契約日)); // 日付のある物件
-  // 各物件の開始〜終了の候補日を集め、全体の時間軸を決める
+  const today=new Date();
+  // 軸の許容範囲：今日から過去18ヶ月〜未来12ヶ月。異常に古い/遠い日付に軸が引っ張られるのを防ぐ
+  const axisMin=new Date(today.getFullYear(),today.getMonth()-18,1);
+  const axisMax=new Date(today.getFullYear(),today.getMonth()+12,1);
+  const inRange=d=>d&&d>=axisMin&&d<=axisMax;
+  // 各物件の候補日を集め、許容範囲内のものだけで時間軸を決める
   const allDates=[];
   view.forEach(p=>{
-    ["買取契約日","残金決済日","リノベ開始日","リノベ完了日","販売開始日","売却完了日"].forEach(k=>{const d=pdate(p[k]);if(d)allDates.push(d);});
-    const z=pdate(p.残金決済日);if(z)allDates.push(addMonths(z,6)); // 目標ライン分も範囲に含める
+    ["買取契約日","残金決済日","リノベ開始日","リノベ完了日","販売開始日","売却完了日","再販契約日"].forEach(k=>{const d=pdate(p[k]);if(inRange(d))allDates.push(d);});
+    const z=pdate(p.残金決済日);if(z){const t=addDays(z,180);if(inRange(t))allDates.push(t);}
   });
-  if(allDates.length===0){el.innerHTML=`<div class="empty" style="padding:20px">日付の入った物件がありません。スプレッドシートに買取契約日・リノベ開始日などを入力すると、ここに工期が表示されます。</div>`;return;}
+  if(allDates.length===0){el.innerHTML=`<div class="empty" style="padding:20px">表示できる日付の物件がありません。スプレッドシートに買取契約日・リノベ開始日などを入力すると、ここに工期が表示されます。</div>`;return;}
   let minD=new Date(Math.min(...allDates)),maxD=new Date(Math.max(...allDates));
-  // 月初〜月末に丸め、前後に余白
-  minD=new Date(minD.getFullYear(),minD.getMonth(),1);
-  maxD=new Date(maxD.getFullYear(),maxD.getMonth()+1,1);
+  // 月初〜月末に丸め、前後に1ヶ月余白
+  minD=new Date(minD.getFullYear(),minD.getMonth()-1,1);
+  maxD=new Date(maxD.getFullYear(),maxD.getMonth()+2,1);
+  // 軸の許容範囲を超えないよう最終クランプ
+  if(minD<axisMin)minD=axisMin;
+  if(maxD>axisMax)maxD=axisMax;
   const total=maxD-minD;
-  const pct=d=>((d-minD)/total*100);
+  const pct=d=>Math.max(0,Math.min(100,(d-minD)/total*100)); // 0〜100%に収める
 
   // 月の目盛り
   let months="";
@@ -409,7 +417,6 @@ function renderGantt(){
     months+=`<div class="gantt-month" style="left:${pct(m)}%">${m.getMonth()+1}月${m.getMonth()===0?"<br>"+m.getFullYear():""}</div>`;
   }
   // 今日ライン
-  const today=new Date();
   const todayLine=(today>=minD&&today<=maxD)?`<div class="gantt-today" style="left:${pct(today)}%"></div>`:"";
 
   // セグメント定義：色は工程ごと
