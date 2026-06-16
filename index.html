@@ -210,6 +210,8 @@
 </div>
 
 <script>
+// 会議画面が最初から読み込むスプレッドシートの公開CSVリンク（全員共通・設定不要）
+const DEFAULT_CSV_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vRooGrXUjT8qIqmaTL62iEFh6JykqF2Z3C0lLEVxXxTPNSTYY6AnXc40w522wc8vgEAgEZcLNFj_lq-/pub?output=csv";
 const PHASES=["仕入検討","買取契約","移転完了","リノベ中","販売中","契約済","売却完了"];
 const PHASE_CLASS={"仕入検討":"p1","買取契約":"p2","移転完了":"p3","リノベ中":"p4","販売中":"p5","契約済":"p6","売却完了":"p7"};
 const STALE_DAYS=45;
@@ -620,15 +622,16 @@ function loadFromUrl(url){
 function saveUrl(){const u=document.getElementById("csvUrl").value.trim();
   if(!u){DATA=SAMPLE;render();document.getElementById("setup").style.display="none";return}
   localStorage.setItem("baikai_csv_url",u);loadFromUrl(u);}
-function reload(){const u=localStorage.getItem("baikai_csv_url");if(u)loadFromUrl(u);else{DATA=SAMPLE;render()}}
+function reload(){const u=localStorage.getItem("baikai_csv_url")||DEFAULT_CSV_URL;loadFromUrl(u)}
 function toggleSetup(){const s=document.getElementById("setup");s.style.display=s.style.display==="none"?"block":"none";
   const u=localStorage.getItem("baikai_csv_url");if(u)document.getElementById("csvUrl").value=u;}
 function toggleHelp(){const h=document.getElementById("help");h.style.display=h.style.display==="none"?"block":"none";}
 
 (function init(){
-  const u=localStorage.getItem("baikai_csv_url");
-  if(u){document.getElementById("csvUrl").value=u;loadFromUrl(u)}
-  else{DATA=SAMPLE;render()}
+  // 保存された設定があればそれを優先。なければ全員共通のデフォルトCSVを読み込む。
+  const u=localStorage.getItem("baikai_csv_url")||DEFAULT_CSV_URL;
+  document.getElementById("csvUrl").value=u;
+  loadFromUrl(u);
 })();
 </script>
 </body>
