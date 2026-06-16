@@ -102,6 +102,17 @@
   .modal td:last-child{text-align:right;font-weight:500}
   .modal .close{margin-top:16px;width:100%;position:sticky;bottom:-22px;box-shadow:0 -8px 12px -6px rgba(0,0,0,.15)}
   .modal-alert{background:var(--red-bg);border:1px solid var(--red);color:var(--red);font-weight:600;font-size:13px;border-radius:8px;padding:10px 12px;margin:10px 0;line-height:1.6}
+  .stat.clickable{cursor:pointer;transition:background .12s,box-shadow .12s}
+  .stat.clickable:hover{background:var(--blue-bg);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .seemore{font-size:10px;color:var(--blue);font-weight:600}
+  .al-list{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
+  .al-row{border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;transition:background .12s,border-color .12s}
+  .al-row:hover{background:var(--blue-bg);border-color:var(--blue)}
+  .al-main{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .al-name{font-size:14px;font-weight:600;color:var(--text)}
+  .al-phase{font-size:12px;color:var(--muted)}
+  .al-reasons{margin-top:5px;display:flex;gap:6px;flex-wrap:wrap}
+  .al-reason{font-size:11px;background:var(--red-bg);color:var(--red);border-radius:6px;padding:2px 8px;font-weight:600}
   .err{color:var(--red);font-size:13px;margin-top:8px}
   .updated{font-size:12px;color:var(--hint)}
   .schedule-bar{background:var(--red-bg);border:1px solid var(--red);border-radius:10px;padding:9px 16px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -290,13 +301,49 @@ function renderStats(){
     {label:"在庫金額",value:oku(stock)},
     {label:"完了 累計利益",value:oku(doneProfit),cls:"ok"},
     {label:"平均利益率",value:avgMargin.toFixed(1)+"%"},
-    {label:"価格改定検討",value:priceReview+"件",cls:priceReview>0?"alert":""},
-    {label:"期限30日以内",value:deadlineWarn+"件",cls:deadlineWarn>0?"alert":""},
-    {label:"要注意",value:alerts+"件",cls:alerts>0?"alert":""},
+    {label:"価格改定検討",value:priceReview+"件",cls:priceReview>0?"alert":"",pop:priceReview>0?"price":""},
+    {label:"期限30日以内",value:deadlineWarn+"件",cls:deadlineWarn>0?"alert":"",pop:deadlineWarn>0?"deadline":""},
+    {label:"要注意",value:alerts+"件",cls:alerts>0?"alert":"",pop:alerts>0?"alert":""},
   ];
   document.getElementById("stats").innerHTML=cards.map(c=>
-    `<div class="stat"><div class="label">${c.label}</div><div class="value ${c.cls||""}">${c.value}</div></div>`).join("");
+    `<div class="stat${c.pop?" clickable":""}"${c.pop?` onclick="openAlertList('${c.pop}')"`:""}><div class="label">${c.label}${c.pop?' <span class="seemore">▸ 一覧</span>':""}</div><div class="value ${c.cls||""}">${c.value}</div></div>`).join("");
 }
+
+// アラート種別ごとに該当物件を抽出
+function alertItems(kind){
+  const view=visible();
+  if(kind==="price") return view.filter(p=>needsPriceReview(p));
+  if(kind==="deadline") return view.filter(p=>{const d=daysToDeadline(p);return d!==null&&d<=30;});
+  return view.filter(p=>isAlert(p)); // alert
+}
+
+function openAlertList(kind){
+  const title=kind==="price"?"価格改定を検討すべき物件":kind==="deadline"?"売却完了期限が近い物件（30日以内）":"要注意の物件";
+  const items=alertItems(kind);
+  // 各物件の該当理由を組み立て
+  const rows=items.map(p=>{
+    const i=DATA.indexOf(p);
+    const el=elapsedDays(p), dl=daysToDeadline(p);
+    let reasons=[];
+    if(needsPriceReview(p)) reasons.push("価格改定検討（"+el+"日経過）");
+    if(dl!==null&&dl<0) reasons.push("期限"+(-dl)+"日超過");
+    else if(dl!==null&&dl<=30) reasons.push("期限まで"+dl+"日");
+    if(p.フェーズ==="リノベ中"&&num(p.リノベ実績)>num(p.リノベ予算)&&num(p.リノベ予算)>0) reasons.push("リノベ予算超過");
+    if((p.フェーズ==="販売中"||p.フェーズ==="契約済")&&daysSince(p.フェーズ更新日)>=STALE_DAYS*2) reasons.push(daysSince(p.フェーズ更新日)+"日停滞");
+    const reasonHtml=reasons.map(r=>`<span class="al-reason">${r}</span>`).join(" ");
+    return `<div class="al-row" onclick="closeAlertList();openModal(${i})">
+      <div class="al-main"><span class="al-name">${esc(dispName(p))}</span><span class="al-phase">${esc(p.フェーズ)}／担当 ${esc(p.担当||"-")}</span></div>
+      <div class="al-reasons">${reasonHtml}</div>
+    </div>`;
+  }).join("")||`<div class="empty" style="padding:16px">該当する物件はありません。</div>`;
+  document.getElementById("modal").innerHTML=`
+    <h3>${title}</h3>
+    <div class="msub">${items.length}件　／　物件名を押すと詳細が開きます</div>
+    <div class="al-list">${rows}</div>
+    <button class="btn primary close" onclick="closeAlertList()">閉じる</button>`;
+  document.getElementById("modalBg").classList.add("show");
+}
+function closeAlertList(){document.getElementById("modalBg").classList.remove("show");}
 
 function isAlert(p){
   if(p.フェーズ==="売却完了")return false;
