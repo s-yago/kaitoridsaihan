@@ -55,7 +55,7 @@
   .stat .value{font-size:26px;font-weight:600;margin-top:2px}
   .stat .value.ok{color:var(--green)}
   .stat .value.alert{color:var(--red)}
-  .board{display:grid;grid-template-columns:repeat(7,minmax(170px,1fr));gap:10px;overflow-x:auto;padding-bottom:8px}
+  .board{display:grid;grid-template-columns:repeat(6,minmax(180px,1fr));gap:12px;overflow-x:auto;padding-bottom:8px}
   .col{background:rgba(0,0,0,0.015);border:1px solid var(--line);border-radius:var(--radius);padding:10px;min-height:120px}
   .col-head{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:10px;padding:0 2px}
   .col-head .cnt{color:var(--hint);font-weight:400}
@@ -67,6 +67,8 @@
   .row .k{color:var(--muted)}
   .row .v{font-weight:500}
   .v.profit{color:var(--green)}
+  .v.loss{color:var(--red)}
+  .v.pending{color:var(--hint);font-weight:400;font-size:11.5px}
   .badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:7px;margin-top:7px}
   .badge.warn{background:var(--warn-bg);color:var(--warn)}
   .badge.alert{background:var(--red-bg);color:var(--red)}
@@ -91,6 +93,10 @@
   .help p.note{background:var(--red-bg);color:var(--red);border-radius:8px;padding:8px 12px;font-weight:600}
   .help ol,.help ul{font-size:13px;color:var(--text);margin:0 0 8px;padding-left:22px}
   .help li{margin-bottom:6px}
+  .help table{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 10px}
+  .help th,.help td{border:1px solid var(--line);padding:5px 8px;text-align:center}
+  .help th{background:var(--gray-bg);font-weight:600}
+  .help td:first-child,.help th:first-child{text-align:left}
   .empty{text-align:center;color:var(--hint);font-size:13px;padding:30px 0}
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
   .modal-bg.show{display:flex}
@@ -117,22 +123,26 @@
   .al-reason{font-size:11px;background:var(--red-bg);color:var(--red);border-radius:6px;padding:2px 8px;font-weight:600}
   .err{color:var(--red);font-size:13px;margin-top:8px}
   .updated{font-size:12px;color:var(--hint)}
-  .schedule-bar{background:var(--red-bg);border:1px solid var(--red);border-radius:10px;padding:9px 16px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  .schedule-bar .sb-title{color:var(--red);font-weight:700;font-size:12px;white-space:nowrap}
-  .schedule-bar .sb-flow{color:var(--red);font-size:13px;line-height:1.7}
-  .schedule-bar .sb-flow b{font-weight:700}
-  .schedule-bar .sb-flow i{color:var(--red);opacity:.5;font-style:normal;margin:0 5px}
+  .schedule-bar{background:#fff;border:1px solid var(--line2);border-radius:10px;padding:10px 16px;margin-bottom:18px}
+  .schedule-bar .sb-title{color:var(--red);font-weight:700;font-size:12px;display:block;margin-bottom:6px}
+  .sb-line{display:flex;align-items:baseline;gap:10px;font-size:12.5px;line-height:1.9;flex-wrap:wrap}
+  .sb-tag{font-weight:700;font-size:11px;border-radius:6px;padding:1px 9px;white-space:nowrap}
+  .sb-flow b{font-weight:700}
+  .sb-flow i{opacity:.45;font-style:normal;margin:0 5px}
   .datewarn{background:var(--warn-bg);border:1px solid var(--warn);border-radius:10px;padding:10px 16px;margin-bottom:18px;font-size:12.5px;color:var(--warn);line-height:1.7}
   .datewarn .dw-title{display:block;font-weight:700;margin-bottom:4px}
   .datewarn ul{margin:2px 0 6px 20px}
   .datewarn li{margin-bottom:2px}
-  .filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+  .filter:last-of-type{margin-bottom:18px}
+  .fname{font-size:11px;color:var(--hint);font-weight:600;margin-right:2px}
   .chip{background:#fff;border:1px solid var(--line2);border-radius:9999px;padding:7px 14px;cursor:pointer;color:var(--text);display:inline-flex;align-items:center;gap:7px;font-size:13px}
   .chip:hover{background:var(--gray-bg)}
   .chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
   .chip .cc{font-size:11px;opacity:.75}
   .tband{position:absolute;left:0;top:0;bottom:0;width:7px}
   .tlabel{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;margin-bottom:4px}
+  .mlabel{display:inline-block;font-size:10px;font-weight:600;border-radius:5px;padding:1px 7px;margin-left:6px;vertical-align:1px}
 </style>
 </head>
 <body>
@@ -152,12 +162,7 @@
     </div>
   </header>
 
-  <div class="schedule-bar">
-    <span class="sb-title">日程基準（仕入決済日を起点／180日以内に売却完了）</span>
-    <span class="sb-flow">
-      <b>決済 0日</b><i>→</i>リノベ完了 <b>30日</b><i>→</i>販売開始 <b>37日</b><i>→</i>価格改定① <b>70日</b><i>→</i>価格改定② <b>100日</b><i>→</i>再販契約 <b>130日</b><i>→</i>売却完了 <b>180日</b>（最終期限）
-    </span>
-  </div>
+  <div class="schedule-bar" id="schedulebar"></div>
 
   <div id="datewarn" style="display:none"></div>
 
@@ -179,25 +184,50 @@
     <ol>
       <li><b>PDFを読み取る</b>：上の「PDF取り込み」ボタンを押して取り込みツールを開き、ハトサポの契約台帳PDFを枠にドラッグ＆ドロップします。種別・物件名・住所・取得価格・買取契約日・残金決済日が自動で読み取られます。内容を確認し、必要なら直して「スプレッドシートにコピー」を押します。</li>
       <li><b>スプレッドシートに貼る</b>：「スプレッドシート」ボタンでシートを開き、空いている行のいちばん左（A列）をクリックして貼り付け（Ctrl+V）します。これで1件追加されます。</li>
-      <li><b>残りを記入する</b>：PDFにない項目（担当・リノベ予算・リノベ実績・諸経費・当初販売価格・成約価格）を手で入力します。フェーズ（進み具合）は、その列のセルをクリックすると出るプルダウンから選びます。</li>
+      <li><b>残りを記入する</b>：PDFにない項目（担当・再販方式・リノベ予算・リノベ実績・諸経費・当初販売価格・成約価格）を手で入力します。フェーズ（進み具合）は、その列のセルをクリックすると出るプルダウンから選びます。</li>
     </ol>
 
+    <h3>再販方式（リノベする物件・しない物件）</h3>
+    <p>いちばん右の<b>「再販方式」</b>列で、<b>リノベ再販／現況再販／解体更地</b>のどれかを選びます。方式によって日程の目安と画面の表示が切り替わります。</p>
+    <ul>
+      <li><b>リノベ再販</b>：買い取ってリノベして売る、従来どおりの流れです。</li>
+      <li><b>現況再販</b>：手を入れずにそのまま売る物件です。リノベの工程を飛ばし、決済後すぐ販売開始の日程になります。リノベ関連の欄と予算超過アラートは出ません。</li>
+      <li><b>解体更地</b>：建物を解体して更地で売る物件です。<b>解体費は「リノベ予算」「リノベ実績」の欄に、解体の着手日・完了日は「リノベ開始日」「リノベ完了日」の欄に入れてください。</b>画面上は「解体予算」「解体実績」「解体着手日」「解体完了日」と表示されます。</li>
+    </ul>
+    <p><b>空欄のままでも動きます。</b>リノベ予算もリノベ実績も0または空欄なら「現況再販」、数字が入っていれば「リノベ再販」として自動で扱います。既存の行を全部埋め直す必要はありません。</p>
+
+    <h3>日程の目安（すべて残金決済日が0日目・売却完了180日が最終期限）</h3>
+    <table>
+      <tr><th>工程</th><th>リノベ再販</th><th>現況再販</th><th>解体更地</th></tr>
+      <tr><td>リノベ／解体完了</td><td>30日</td><td>―</td><td>25日</td></tr>
+      <tr><td>販売開始</td><td>37日</td><td>7日</td><td>32日</td></tr>
+      <tr><td>価格改定①</td><td>120日</td><td>120日</td><td>120日</td></tr>
+      <tr><td>再販契約</td><td>130日</td><td>130日</td><td>130日</td></tr>
+      <tr><td>価格改定②</td><td>150日</td><td>150日</td><td>150日</td></tr>
+      <tr><td>売却完了（期限）</td><td>180日</td><td>180日</td><td>180日</td></tr>
+    </table>
+    <p>130日で再販契約が取れているのが理想の姿です。取れていない場合に150日で最後の価格改定をして、180日の期限に間に合わせる、という設計にしています。</p>
+
     <h3>物件が進んだとき</h3>
-    <p>スプレッドシートでフェーズをプルダウンで選び直し、あわせて<b>その工程の日付欄</b>を埋めます。リノベが終わったら「リノベ完了日」、売り出したら「販売開始日」、買主と契約したら「再販契約日」、決済が終わったら「売却完了日」です。停滞日数や遅れの判定は、この日付から自動で計算します。</p>
+    <p>スプレッドシートでフェーズをプルダウンで選び直し、あわせて<b>その工程の日付欄</b>を埋めます。リノベ（解体）が終わったら「リノベ完了日」、売り出したら「販売開始日」、買主と契約したら「再販契約日」、決済が終わったら「売却完了日」です。停滞日数や遅れの判定は、この日付から自動で計算します。</p>
 
     <h3>日付の入れ方</h3>
     <p><b>必ず西暦4桁から入力してください（例：2026/07/15）。</b>「7/15」のように年を省くと、ブラウザが2001年の日付と解釈してしまい、経過日数が数千日と表示されます。読み取れない日付があるときは、画面上部にオレンジ色の注意帯が出て、どの物件のどの欄かを表示します。</p>
 
+    <h3>金額の入れ方</h3>
+    <p><b>すべて「円」単位の半角数字で入力してください。</b>「1,280万円」のように単位を書くと1280円と読み取られ、全角数字（１２８０）だと0と読み取られます。粗利がおかしいときは、まずここを疑ってください。</p>
+
     <h3>この画面の見方</h3>
     <ul>
       <li><b>上の数字</b>：進行中の件数、いま抱えている在庫金額、売却完了した物件の累計利益、平均利益率、要注意の件数。</li>
-      <li><b>7つの列</b>：左から 仕入検討 → 買取契約 → 移転完了 → リノベ中 → 販売中 → 契約済 → 売却完了。物件はフェーズの列に並びます。</li>
-      <li><b>カードの色帯</b>：物件の種別を表します（土地=緑、戸建て=オレンジ、マンション=青、その他=赤）。</li>
-      <li><b>赤いバッジ</b>：「予算超過」はリノベ費が予算を超えたとき。「販売○日」は販売開始から90日、「契約後○日」は再販契約から45日を過ぎても動いていないとき。会議で注意すべき物件がひと目で分かります。</li>
-      <li><b>日程の管理</b>：仕入決済日（残金決済日）を0日目として、売却完了まで180日以内を目標に管理します。カードに「○日目」「期限まで○日」が出ます。180日を過ぎると「期限○日超過」が赤バッジで出ます。</li>
-      <li><b>価格改定のアラート</b>：決済から70日を過ぎてまだ1回も改定していない物件に「価格改定①検討」、100日を過ぎてまだ2回目を出していない物件に「価格改定②検討」が出ます。<b>スプレッドシートに改定価格を入れた時点でアラートは消えます。</b>「1回目改定日／2回目改定日」を入れておくと、改定から30日間は次のアラートも出さず、様子を見る期間として扱います。</li>
+      <li><b>7つの列</b>：左から 仕入検討 → 買取契約 → 移転完了 → リノベ・解体中 → 販売中 → 契約済 → 売却完了。物件はフェーズの列に並びます。現況再販の物件は「移転完了」から「販売中」に直行します。</li>
+      <li><b>カードの色帯</b>：物件の種別を表します（土地=緑、戸建て=オレンジ、マンション=青、その他=赤）。種別の右に、現況再販・解体更地の物件だけ再販方式のタグが付きます。</li>
+      <li><b>粗利の表示</b>：売価（成約価格、なければ現在の売出価格）から総コストを引いた金額です。<b>マイナスのときは赤字で「△」付きの赤い数字</b>になります。売出価格が未入力のときは「売価未入力」と出て、金額は出しません。</li>
+      <li><b>赤いバッジ</b>：「予算超過」はリノベ費（解体費）が予算を超えたとき。「販売○日」は販売開始から90日、「契約後○日」は再販契約から45日を過ぎても動いていないとき。「粗利マイナス」は売価が総コストを下回っているとき。</li>
+      <li><b>日程の管理</b>：残金決済日を0日目として、売却完了まで180日以内を目標に管理します。カードに「○日目」「期限まで○日」が出ます。180日を過ぎると「期限○日超過」が赤バッジで出ます。</li>
+      <li><b>価格改定のアラート</b>：決済から120日を過ぎてまだ1回も改定していない物件に「価格改定①検討」、150日を過ぎてまだ2回目を出していない物件に「価格改定②検討」が出ます。<b>スプレッドシートに改定価格を入れた時点でアラートは消えます。</b>「1回目改定日／2回目改定日」を入れておくと、改定から30日間は次のアラートも出さず、様子を見る期間として扱います。</li>
       <li><b>価格の反映</b>：「当初販売価格・1回目改定価格・2回目改定価格」のうち、いちばん新しく入っている価格が自動的に現在の売出価格になり、粗利も連動して計算し直されます。</li>
-      <li><b>ガントチャート</b>：上の「ガントチャート」タブで、物件ごとの工期を時間軸で見られます。点線が各工程の予定日（決済+30日リノベ完了／+37日販売開始／+70・100日価格改定／+130日再販契約／+180日売却完了）、赤い線が180日の期限です。実績の棒が予定の点線より右にあれば遅れ気味、と分かります。</li>
+      <li><b>ガントチャート</b>：上の「ガントチャート」タブで、物件ごとの工期を時間軸で見られます。点線が各工程の予定日、赤い線が180日の期限です。予定日は再販方式ごとに変わります。実績の棒が予定の点線より右にあれば遅れ気味、と分かります。</li>
       <li><b>カードをクリック</b>：取得価格・リノベ費・粗利・買取契約日・残金決済日などの明細が開きます。</li>
     </ul>
 
@@ -212,6 +242,7 @@
     <button class="vtab" id="vtab-gantt" onclick="setView('gantt')">ガントチャート</button>
   </div>
   <div class="filter" id="filter"></div>
+  <div class="filter" id="filterM"></div>
   <div class="stats" id="stats"></div>
   <div class="board" id="board"></div>
   <div class="gantt" id="gantt" style="display:none"></div>
@@ -225,45 +256,84 @@
 // 会議画面が最初から読み込むスプレッドシートの公開CSVリンク（全員共通・設定不要）
 const DEFAULT_CSV_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vRooGrXUjT8qIqmaTL62iEFh6JykqF2Z3C0lLEVxXxTPNSTYY6AnXc40w522wc8vgEAgEZcLNFj_lq-/pub?output=csv";
 const PHASES=["仕入検討","買取契約","移転完了","リノベ中","販売中","契約済","売却完了"];
+// スプレッドシートの値は変えず、画面上の見出しだけ差し替える
+const PHASE_LABEL={"リノベ中":"リノベ・解体中"};
 const PHASE_CLASS={"仕入検討":"p1","買取契約":"p2","移転完了":"p3","リノベ中":"p4","販売中":"p5","契約済":"p6","売却完了":"p7"};
 
 // ── 調整用の設定値 ──────────────────────────────
 const STALE_SALE_DAYS=90;      // 販売中：販売開始から何日で「停滞」とみなすか
 const STALE_CONTRACT_DAYS=45;  // 契約済：再販契約から何日で「停滞」とみなすか
 const PRICE_COOLDOWN_DAYS=30;  // 価格改定後、何日間は次のアラートを出さないか
+const PRICE1_DAYS=120;         // 決済から何日で「価格改定①検討」を出すか
+const PRICE2_DAYS=150;         // 決済から何日で「価格改定②検討」を出すか
+const DEADLINE_DAYS=180;       // 売却完了の最終期限（決済からの日数）
 const YEAR_MIN=2015;                              // これより前の年は入力ミスとして扱う
 const YEAR_MAX=new Date().getFullYear()+10;       // これより先の年は入力ミスとして扱う
 // ───────────────────────────────────────────────
 
-// 仕入決済(残金決済日)起点の日程計画。daysは決済日からの経過日数
-const SCHEDULE=[
-  {key:"リノベ完了", days:30,  actual:"リノベ完了日", color:"var(--amber)"},
-  {key:"販売開始",   days:37,  actual:"販売開始日",   color:"var(--purple)"},
-  {key:"価格改定①", days:70,  alert:true},
-  {key:"価格改定②", days:100, alert:true},
-  {key:"再販契約",   days:130, actual:"再販契約日",   color:"var(--teal)"},
-  {key:"売却完了",   days:180, actual:"売却完了日",   color:"var(--green)", deadline:true},
-];
-const DEADLINE_DAYS=180;
+// ── 再販方式 ───────────────────────────────────
+// リノベ再販：買い取ってリノベして売る
+// 現況再販　：手を入れずそのまま売る（リノベ工程なし）
+// 解体更地　：解体して更地で売る（解体費はリノベ予算/実績の列を流用）
+const METHODS=["リノベ再販","現況再販","解体更地"];
+const METHOD_FG={"リノベ再販":"--amber","現況再販":"--teal","解体更地":"--gray"};
+const METHOD_BG={"リノベ再販":"--amber-bg","現況再販":"--teal-bg","解体更地":"--gray-bg"};
+// 工事の呼び名（現況再販は工事なし）
+const WORK_NAME={"リノベ再販":"リノベ","現況再販":"","解体更地":"解体"};
+
+// 方式ごとの日程計画。daysは残金決済日からの経過日数
+const SCHEDULES={
+  "リノベ再販":[
+    {key:"リノベ完了", days:30,  actual:"リノベ完了日", color:"var(--amber)"},
+    {key:"販売開始",   days:37,  actual:"販売開始日",   color:"var(--purple)"},
+    {key:"価格改定①", days:PRICE1_DAYS, alert:true},
+    {key:"再販契約",   days:130, actual:"再販契約日",   color:"var(--teal)"},
+    {key:"価格改定②", days:PRICE2_DAYS, alert:true},
+    {key:"売却完了",   days:DEADLINE_DAYS, actual:"売却完了日", color:"var(--green)", deadline:true},
+  ],
+  "現況再販":[
+    {key:"販売開始",   days:7,   actual:"販売開始日",   color:"var(--purple)"},
+    {key:"価格改定①", days:PRICE1_DAYS, alert:true},
+    {key:"再販契約",   days:130, actual:"再販契約日",   color:"var(--teal)"},
+    {key:"価格改定②", days:PRICE2_DAYS, alert:true},
+    {key:"売却完了",   days:DEADLINE_DAYS, actual:"売却完了日", color:"var(--green)", deadline:true},
+  ],
+  "解体更地":[
+    {key:"解体完了",   days:25,  actual:"リノベ完了日", color:"var(--amber)"},
+    {key:"販売開始",   days:32,  actual:"販売開始日",   color:"var(--purple)"},
+    {key:"価格改定①", days:PRICE1_DAYS, alert:true},
+    {key:"再販契約",   days:130, actual:"再販契約日",   color:"var(--teal)"},
+    {key:"価格改定②", days:PRICE2_DAYS, alert:true},
+    {key:"売却完了",   days:DEADLINE_DAYS, actual:"売却完了日", color:"var(--green)", deadline:true},
+  ],
+};
+
 const DATE_FIELDS=["買取契約日","残金決済日","リノベ開始日","リノベ完了日","販売開始日","再販契約日","売却完了日","1回目改定日","2回目改定日"];
 const TYPES=["土地","戸建て","マンション","その他"];
 const TYPE_BG={"土地":"--green-bg","戸建て":"--amber-bg","マンション":"--blue-bg","その他":"--red-bg"};
 const TYPE_FG={"土地":"--green","戸建て":"--amber","マンション":"--blue","その他":"--red"};
-let FILTER="すべて";
+let FILTER="すべて";      // 種別フィルタ
+let FILTER_M="すべて";    // 再販方式フィルタ
 
 const SAMPLE=[
- {種別:"マンション",マンション名:"桜町マンション",部屋番号:"302",住所:"富山市桜町",担当:"田中",フェーズ:"リノベ中",取得価格:11800000,リノベ予算:3000000,リノベ実績:3450000,諸経費:900000,当初販売価格:0,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:0,買取契約日:"2026-04-15",残金決済日:"2026-05-10",リノベ開始日:"2026-05-15",リノベ完了日:"",販売開始日:"",売却完了日:"",再販契約日:""},
- {種別:"戸建て",物件名:"新庄戸建て",住所:"富山市新庄町",担当:"佐藤",フェーズ:"移転完了",取得価格:16500000,リノベ予算:4200000,リノベ実績:4100000,諸経費:1200000,当初販売価格:0,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:0,買取契約日:"2026-05-12",残金決済日:"2026-05-30",リノベ開始日:"",リノベ完了日:"",販売開始日:"",売却完了日:"",再販契約日:""},
- {種別:"マンション",マンション名:"五福リバーサイド",部屋番号:"1101",住所:"富山市五福",担当:"田中",フェーズ:"販売中",取得価格:18000000,リノベ予算:3500000,リノベ実績:3500000,諸経費:1100000,当初販売価格:24800000,"1回目改定価格":23800000,"1回目改定日":"2026-07-20","2回目改定価格":0,"2回目改定日":"",成約価格:0,買取契約日:"2026-01-20",残金決済日:"2026-02-15",リノベ開始日:"2026-02-20",リノベ完了日:"2026-04-10",販売開始日:"2026-04-15",売却完了日:"",再販契約日:""},
- {種別:"マンション",マンション名:"太郎丸ハイツ",部屋番号:"205",住所:"富山市太郎丸",担当:"鈴木",フェーズ:"契約済",取得価格:13000000,リノベ予算:2800000,リノベ実績:2750000,諸経費:950000,当初販売価格:19800000,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:19800000,買取契約日:"2026-04-28",残金決済日:"2026-05-20",リノベ開始日:"2026-05-22",リノベ完了日:"2026-06-30",販売開始日:"2026-07-01",売却完了日:"",再販契約日:"2026-07-25"},
- {種別:"戸建て",物件名:"堀川小泉戸建て",住所:"富山市堀川小泉町",担当:"佐藤",フェーズ:"売却完了",取得価格:15000000,リノベ予算:3200000,リノベ実績:3300000,諸経費:1250000,当初販売価格:21800000,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:21500000,買取契約日:"2026-03-01",残金決済日:"2026-03-25",リノベ開始日:"2026-03-28",リノベ完了日:"2026-04-30",販売開始日:"2026-05-05",売却完了日:"2026-05-15",再販契約日:""},
- {種別:"土地",物件名:"問屋町 売地",住所:"富山市問屋町",担当:"鈴木",フェーズ:"買取契約",取得価格:9800000,リノベ予算:0,リノベ実績:0,諸経費:700000,当初販売価格:0,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:0,買取契約日:"2026-05-25",残金決済日:"2026-06-08",リノベ開始日:"",リノベ完了日:"",販売開始日:"",売却完了日:"",再販契約日:""},
- {種別:"その他",物件名:"小杉アパート（1棟）",住所:"射水市小杉",担当:"田中",フェーズ:"仕入検討",取得価格:28000000,リノベ予算:5000000,リノベ実績:0,諸経費:1500000,当初販売価格:0,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:0,買取契約日:"2026-06-05",残金決済日:"",リノベ開始日:"",リノベ完了日:"",販売開始日:"",売却完了日:"",再販契約日:""},
+ {種別:"マンション",マンション名:"桜町マンション",部屋番号:"302",住所:"富山市桜町",担当:"田中",フェーズ:"リノベ中",再販方式:"リノベ再販",取得価格:11800000,リノベ予算:3000000,リノベ実績:3450000,諸経費:900000,当初販売価格:0,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:0,買取契約日:"2026-04-15",残金決済日:"2026-05-10",リノベ開始日:"2026-05-15",リノベ完了日:"",販売開始日:"",売却完了日:"",再販契約日:""},
+ {種別:"戸建て",物件名:"新庄戸建て",住所:"富山市新庄町",担当:"佐藤",フェーズ:"移転完了",再販方式:"リノベ再販",取得価格:16500000,リノベ予算:4200000,リノベ実績:4100000,諸経費:1200000,当初販売価格:0,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:0,買取契約日:"2026-05-12",残金決済日:"2026-05-30",リノベ開始日:"",リノベ完了日:"",販売開始日:"",売却完了日:"",再販契約日:""},
+ {種別:"マンション",マンション名:"五福リバーサイド",部屋番号:"1101",住所:"富山市五福",担当:"田中",フェーズ:"販売中",再販方式:"リノベ再販",取得価格:18000000,リノベ予算:3500000,リノベ実績:3500000,諸経費:1100000,当初販売価格:24800000,"1回目改定価格":23800000,"1回目改定日":"2026-07-20","2回目改定価格":0,"2回目改定日":"",成約価格:0,買取契約日:"2026-01-20",残金決済日:"2026-02-15",リノベ開始日:"2026-02-20",リノベ完了日:"2026-04-10",販売開始日:"2026-04-15",売却完了日:"",再販契約日:""},
+ {種別:"マンション",マンション名:"太郎丸ハイツ",部屋番号:"205",住所:"富山市太郎丸",担当:"鈴木",フェーズ:"契約済",再販方式:"リノベ再販",取得価格:13000000,リノベ予算:2800000,リノベ実績:2750000,諸経費:950000,当初販売価格:19800000,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:19800000,買取契約日:"2026-04-28",残金決済日:"2026-05-20",リノベ開始日:"2026-05-22",リノベ完了日:"2026-06-30",販売開始日:"2026-07-01",売却完了日:"",再販契約日:"2026-07-25"},
+ {種別:"戸建て",物件名:"堀川小泉戸建て",住所:"富山市堀川小泉町",担当:"佐藤",フェーズ:"売却完了",再販方式:"リノベ再販",取得価格:15000000,リノベ予算:3200000,リノベ実績:3300000,諸経費:1250000,当初販売価格:21800000,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:21500000,買取契約日:"2026-03-01",残金決済日:"2026-03-25",リノベ開始日:"2026-03-28",リノベ完了日:"2026-04-30",販売開始日:"2026-05-05",売却完了日:"2026-05-15",再販契約日:""},
+ {種別:"土地",物件名:"問屋町 売地",住所:"富山市問屋町",担当:"鈴木",フェーズ:"販売中",再販方式:"現況再販",取得価格:9800000,リノベ予算:0,リノベ実績:0,諸経費:700000,当初販売価格:12800000,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:0,買取契約日:"2026-05-25",残金決済日:"2026-06-08",リノベ開始日:"",リノベ完了日:"",販売開始日:"2026-06-15",売却完了日:"",再販契約日:""},
+ {種別:"戸建て",物件名:"中川原 古家付土地",住所:"富山市中川原",担当:"鈴木",フェーズ:"リノベ中",再販方式:"解体更地",取得価格:8500000,リノベ予算:1800000,リノベ実績:1950000,諸経費:850000,当初販売価格:12500000,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:0,買取契約日:"2026-05-02",残金決済日:"2026-05-28",リノベ開始日:"2026-06-02",リノベ完了日:"",販売開始日:"",売却完了日:"",再販契約日:""},
+ {種別:"その他",物件名:"小杉アパート（1棟）",住所:"射水市小杉",担当:"田中",フェーズ:"仕入検討",再販方式:"リノベ再販",取得価格:28000000,リノベ予算:5000000,リノベ実績:0,諸経費:1500000,当初販売価格:0,"1回目改定価格":0,"1回目改定日":"","2回目改定価格":0,"2回目改定日":"",成約価格:0,買取契約日:"2026-06-05",残金決済日:"",リノベ開始日:"",リノベ完了日:"",販売開始日:"",売却完了日:"",再販契約日:""},
 ];
 
 let DATA=[];
-const yen=n=>"¥"+Math.round(n).toLocaleString("ja-JP");
-const oku=n=>n>=100000000?"¥"+(n/100000000).toFixed(2)+"億":(n>=10000?"¥"+Math.round(n/10000).toLocaleString()+"万":yen(n));
+const yen=n=>(n<0?"△¥"+Math.round(-n).toLocaleString("ja-JP"):"¥"+Math.round(n).toLocaleString("ja-JP"));
+function oku(n){
+  const s=n<0?"△":"", a=Math.abs(n);
+  if(a>=100000000)return s+"¥"+(a/100000000).toFixed(2)+"億";
+  if(a>=10000)return s+"¥"+Math.round(a/10000).toLocaleString()+"万";
+  return s+"¥"+Math.round(a).toLocaleString("ja-JP");
+}
 function dispName(p){
   if(p.種別==="マンション"){
     const nm=(p.マンション名||"").trim();const rm=(p.部屋番号||"").trim();
@@ -274,6 +344,19 @@ function dispName(p){
 function ptype(p){const t=(p.種別||"").trim();return TYPES.includes(t)?t:"その他";}
 
 function num(v){if(v==null)return 0;const s=(""+v).replace(/[^0-9.\-]/g,"");const n=parseFloat(s);return isNaN(n)?0:n}
+
+// ── 再販方式の判定 ─────────────────────────────
+// 「再販方式」列に有効な値があればそれを使う。
+// 空欄の行は、リノベ費（予算・実績）が入っていなければ現況再販とみなす。
+function method(p){
+  const m=(p.再販方式||"").trim();
+  if(METHODS.includes(m))return m;
+  return (num(p.リノベ予算)>0||num(p.リノベ実績)>0)?"リノベ再販":"現況再販";
+}
+function hasWork(p){return method(p)!=="現況再販";}     // 工事工程があるか
+function workName(p){return WORK_NAME[method(p)]||"";}  // 「リノベ」or「解体」
+function schedule(p){return SCHEDULES[method(p)]||SCHEDULES["リノベ再販"];}
+function scheduleDays(p,key){const s=schedule(p).find(x=>x.key===key);return s?s.days:null;}
 
 // ── 日付の解釈 ─────────────────────────────────
 // 「2026/7/15」「2026-07-15」「2026年7月15日」「2026.7.15」を受け付ける。
@@ -310,15 +393,40 @@ function dateIssues(){
   });
   return out;
 }
+// 金額が数字として読めない欄を集める（全角数字・単位混じりの検出）
+function amountIssues(){
+  const out=[];
+  const FIELDS=["取得価格","リノベ予算","リノベ実績","諸経費","当初販売価格","1回目改定価格","2回目改定価格","成約価格"];
+  DATA.forEach(p=>{
+    FIELDS.forEach(k=>{
+      const raw=(p[k]==null?"":(""+p[k])).trim();
+      if(!raw)return;
+      if(/^[0-9,.\-]+$/.test(raw))return;        // 半角数字とカンマだけなら正常
+      out.push({name:dispName(p),field:k,raw:raw});
+    });
+  });
+  return out;
+}
 function renderDateWarn(){
   const el=document.getElementById("datewarn");
-  const issues=dateIssues();
-  if(!issues.length){el.style.display="none";el.className="";el.innerHTML="";return;}
+  const di=dateIssues(), ai=amountIssues();
+  if(!di.length&&!ai.length){el.style.display="none";el.className="";el.innerHTML="";return;}
   el.className="datewarn";el.style.display="block";
-  const list=issues.slice(0,12).map(i=>`<li><b>${esc(i.name)}</b> の「${esc(i.field)}」＝「${esc(i.raw)}」</li>`).join("");
-  el.innerHTML=`<span class="dw-title">日付を読み取れない欄が ${issues.length}件 あります（この欄は日数計算から除外しています）</span>
-    <ul>${list}${issues.length>12?`<li>ほか ${issues.length-12}件</li>`:""}</ul>
-    スプレッドシートで <b>2026/07/15</b> のように<b>西暦4桁から</b>入力し直してください。「7/15」のように年を省くと、ブラウザが2001年の日付として扱うため、経過日数が数千日と表示されます。`;
+  let html="";
+  if(di.length){
+    const list=di.slice(0,10).map(i=>`<li><b>${esc(i.name)}</b> の「${esc(i.field)}」＝「${esc(i.raw)}」</li>`).join("");
+    html+=`<span class="dw-title">日付を読み取れない欄が ${di.length}件 あります（この欄は日数計算から除外しています）</span>
+      <ul>${list}${di.length>10?`<li>ほか ${di.length-10}件</li>`:""}</ul>
+      スプレッドシートで <b>2026/07/15</b> のように<b>西暦4桁から</b>入力し直してください。「7/15」のように年を省くと、ブラウザが2001年の日付として扱うため、経過日数が数千日と表示されます。`;
+  }
+  if(ai.length){
+    const list=ai.slice(0,10).map(i=>`<li><b>${esc(i.name)}</b> の「${esc(i.field)}」＝「${esc(i.raw)}」</li>`).join("");
+    html+=`${di.length?'<div style="height:10px"></div>':""}
+      <span class="dw-title">金額を数字として読み取れない欄が ${ai.length}件 あります（粗利が合わない原因になります）</span>
+      <ul>${list}${ai.length>10?`<li>ほか ${ai.length-10}件</li>`:""}</ul>
+      <b>円単位の半角数字だけ</b>で入力してください。「1,280万円」は1280円、全角の「１２８０」は0として読み取られます。`;
+  }
+  el.innerHTML=html;
 }
 
 function cost(p){return num(p.取得価格)+Math.max(num(p.リノベ実績),num(p.リノベ予算))+num(p.諸経費)}
@@ -334,8 +442,10 @@ function listPrice(p){
   return num(p.売出価格); // 旧列フォールバック
 }
 function salePrice(p){return num(p.成約価格)||listPrice(p)}
-function profit(p){const s=salePrice(p);return s>0?s-cost(p):0}
-function margin(p){const s=salePrice(p);return s>0?profit(p)/s*100:0}
+function hasPrice(p){return salePrice(p)>0}
+// 粗利。売価が入っていないときは算出不能（null）を返し、マイナスはそのまま返す。
+function profit(p){return hasPrice(p)?salePrice(p)-cost(p):null}
+function margin(p){const s=salePrice(p);return s>0?(s-cost(p))/s*100:null}
 
 // 仕入決済日からの経過日数（売却完了していればその日まで、進行中は今日まで）
 function elapsedDays(p){
@@ -350,7 +460,7 @@ function daysToDeadline(p){
   return dayDiff(today0(),addDays(base,DEADLINE_DAYS));
 }
 
-// ── 停滞判定：フェーズ更新日ではなく、その工程の実日付を基準にする ──
+// ── 停滞判定：その工程の実日付を基準にする ──
 function staleInfo(p){
   if(p.フェーズ==="販売中"){
     const d=pdate(p.販売開始日);if(!d)return null;
@@ -363,6 +473,11 @@ function staleInfo(p){
     return n>=STALE_CONTRACT_DAYS?{days:n,label:"契約後"+n+"日"}:null;
   }
   return null;
+}
+// 工事費の予算超過（現況再販は工事がないので対象外）
+function overBudget(p){
+  if(!hasWork(p))return false;
+  return p.フェーズ==="リノベ中"&&num(p.リノベ実績)>num(p.リノベ予算)&&num(p.リノベ予算)>0;
 }
 
 // ── 価格改定 ───────────────────────────────────
@@ -382,13 +497,13 @@ function daysSinceRevision(p){
   return dayDiff(d,today0());
 }
 // 次に行うべき改定の回数を返す（0なら改定不要＝アラートを出さない）
-// ・決済から70日超で1回目、100日超で2回目を期待する
+// ・決済から120日超で1回目、150日超で2回目を期待する
 // ・すでにその回数の改定価格が入っていればアラートは消える
 // ・改定日が入っていれば、改定からPRICE_COOLDOWN_DAYS日間は様子見としてアラートを止める
 function priceReviewStage(p){
   if(p.フェーズ==="売却完了"||p.フェーズ==="契約済")return 0;
   const el=elapsedDays(p);if(el===null)return 0;
-  const need=el>=100?2:(el>=70?1:0);
+  const need=el>=PRICE2_DAYS?2:(el>=PRICE1_DAYS?1:0);
   if(!need)return 0;
   const done=revisionCount(p);
   if(done>=need)return 0;
@@ -409,8 +524,19 @@ function setView(v){
   render();
 }
 
+function renderScheduleBar(){
+  const lines=METHODS.map(m=>{
+    const flow=SCHEDULES[m].map(s=>`${s.key} <b>${s.days}日</b>`).join('<i>→</i>');
+    return `<div class="sb-line">
+      <span class="sb-tag" style="background:var(${METHOD_BG[m]});color:var(${METHOD_FG[m]})">${m}</span>
+      <span class="sb-flow"><b>決済 0日</b><i>→</i>${flow}</span></div>`;
+  }).join("");
+  document.getElementById("schedulebar").innerHTML=
+    `<span class="sb-title">日程基準（残金決済日を起点／180日以内に売却完了）</span>${lines}`;
+}
+
 function render(){
-  renderDateWarn();renderFilter();renderStats();
+  renderScheduleBar();renderDateWarn();renderFilter();renderStats();
   if(VIEW==="kanban")renderBoard();else renderGantt();
   document.getElementById("updated").textContent="最終更新 "+new Date().toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
 }
@@ -420,17 +546,19 @@ function renderStats(){
   const active=view.filter(p=>p.フェーズ!=="売却完了");
   const done=view.filter(p=>p.フェーズ==="売却完了");
   const stock=active.reduce((s,p)=>s+cost(p),0);
-  const doneProfit=done.reduce((s,p)=>s+profit(p),0);
-  const margins=done.map(margin).filter(m=>m>0);
+  const doneProfit=done.reduce((s,p)=>s+(profit(p)||0),0);
+  const margins=done.map(margin).filter(m=>m!==null);
   const avgMargin=margins.length?margins.reduce((a,b)=>a+b,0)/margins.length:0;
   const alerts=view.filter(p=>isAlert(p)).length;
   const priceReview=view.filter(p=>needsPriceReview(p)).length;
   const deadlineWarn=view.filter(p=>{const d=daysToDeadline(p);return d!==null&&d<=30;}).length;
+  const loss=view.filter(p=>{const pr=profit(p);return pr!==null&&pr<0;}).length;
   const cards=[
     {label:"進行中物件",value:active.length+"件"},
     {label:"在庫金額",value:oku(stock)},
-    {label:"完了 累計利益",value:oku(doneProfit),cls:"ok"},
-    {label:"平均利益率",value:avgMargin.toFixed(1)+"%"},
+    {label:"完了 累計利益",value:oku(doneProfit),cls:doneProfit<0?"alert":"ok"},
+    {label:"平均利益率",value:avgMargin.toFixed(1)+"%",cls:avgMargin<0?"alert":""},
+    {label:"粗利マイナス",value:loss+"件",cls:loss>0?"alert":"",pop:loss>0?"loss":""},
     {label:"価格改定検討",value:priceReview+"件",cls:priceReview>0?"alert":"",pop:priceReview>0?"price":""},
     {label:"期限30日以内",value:deadlineWarn+"件",cls:deadlineWarn>0?"alert":"",pop:deadlineWarn>0?"deadline":""},
     {label:"要注意",value:alerts+"件",cls:alerts>0?"alert":"",pop:alerts>0?"alert":""},
@@ -444,26 +572,30 @@ function alertItems(kind){
   const view=visible();
   if(kind==="price") return view.filter(p=>needsPriceReview(p));
   if(kind==="deadline") return view.filter(p=>{const d=daysToDeadline(p);return d!==null&&d<=30;});
+  if(kind==="loss") return view.filter(p=>{const pr=profit(p);return pr!==null&&pr<0;});
   return view.filter(p=>isAlert(p)); // alert
 }
 
 function openAlertList(kind){
-  const title=kind==="price"?"価格改定を検討すべき物件":kind==="deadline"?"売却完了期限が近い物件（30日以内）":"要注意の物件";
+  const title=kind==="price"?"価格改定を検討すべき物件"
+    :kind==="deadline"?"売却完了期限が近い物件（30日以内）"
+    :kind==="loss"?"粗利がマイナスの物件"
+    :"要注意の物件";
   const items=alertItems(kind);
-  // 各物件の該当理由を組み立て
   const rows=items.map(p=>{
     const i=DATA.indexOf(p);
-    const el=elapsedDays(p), dl=daysToDeadline(p);
+    const el=elapsedDays(p), dl=daysToDeadline(p), pr=profit(p);
     let reasons=[];
     if(needsPriceReview(p)) reasons.push(priceReviewLabel(p)+"（"+el+"日経過）");
     if(dl!==null&&dl<0) reasons.push("期限"+(-dl)+"日超過");
     else if(dl!==null&&dl<=30) reasons.push("期限まで"+dl+"日");
-    if(p.フェーズ==="リノベ中"&&num(p.リノベ実績)>num(p.リノベ予算)&&num(p.リノベ予算)>0) reasons.push("リノベ予算超過");
+    if(pr!==null&&pr<0) reasons.push("粗利"+oku(pr));
+    if(overBudget(p)) reasons.push(workName(p)+"予算超過");
     const st=staleInfo(p);
     if(st) reasons.push(st.label+"動きなし");
     const reasonHtml=reasons.map(r=>`<span class="al-reason">${r}</span>`).join(" ");
     return `<div class="al-row" onclick="closeAlertList();openModal(${i})">
-      <div class="al-main"><span class="al-name">${esc(dispName(p))}</span><span class="al-phase">${esc(p.フェーズ)}／担当 ${esc(p.担当||"-")}</span></div>
+      <div class="al-main"><span class="al-name">${esc(dispName(p))}</span><span class="al-phase">${esc(phaseLabel(p.フェーズ))}／${esc(method(p))}／担当 ${esc(p.担当||"-")}</span></div>
       <div class="al-reasons">${reasonHtml}</div>
     </div>`;
   }).join("")||`<div class="empty" style="padding:16px">該当する物件はありません。</div>`;
@@ -479,20 +611,33 @@ function closeAlertList(){document.getElementById("modalBg").classList.remove("s
 function isAlert(p){
   if(p.フェーズ==="売却完了")return false;
   if(staleInfo(p))return true;
-  if(p.フェーズ==="リノベ中"&&num(p.リノベ実績)>num(p.リノベ予算)&&num(p.リノベ予算)>0)return true;
+  if(overBudget(p))return true;
+  const pr=profit(p);if(pr!==null&&pr<0)return true;    // 粗利マイナス
   const dl=daysToDeadline(p);if(dl!==null&&dl<0)return true; // 180日超過
   if(needsPriceReview(p))return true; // 価格改定すべき
   return false;
 }
 
-function visible(){return FILTER==="すべて"?DATA:DATA.filter(p=>ptype(p)===FILTER);}
+function phaseLabel(ph){return PHASE_LABEL[ph]||ph;}
+function visible(){
+  return DATA.filter(p=>
+    (FILTER==="すべて"||ptype(p)===FILTER)&&
+    (FILTER_M==="すべて"||method(p)===FILTER_M));
+}
 function renderFilter(){
+  const base=DATA.filter(p=>FILTER_M==="すべて"||method(p)===FILTER_M);
   const opts=["すべて",...TYPES];
-  const counts={};opts.forEach(o=>counts[o]=o==="すべて"?DATA.length:DATA.filter(p=>ptype(p)===o).length);
-  document.getElementById("filter").innerHTML=opts.map(o=>
+  const counts={};opts.forEach(o=>counts[o]=o==="すべて"?base.length:base.filter(p=>ptype(p)===o).length);
+  document.getElementById("filter").innerHTML=`<span class="fname">種別</span>`+opts.map(o=>
     `<button class="chip ${FILTER===o?'on':''}" onclick="setFilter('${o}')">${o}<span class="cc">${counts[o]}</span></button>`).join("");
+  const baseM=DATA.filter(p=>FILTER==="すべて"||ptype(p)===FILTER);
+  const optsM=["すべて",...METHODS];
+  const cm={};optsM.forEach(o=>cm[o]=o==="すべて"?baseM.length:baseM.filter(p=>method(p)===o).length);
+  document.getElementById("filterM").innerHTML=`<span class="fname">再販方式</span>`+optsM.map(o=>
+    `<button class="chip ${FILTER_M===o?'on':''}" onclick="setFilterM('${o}')">${o}<span class="cc">${cm[o]}</span></button>`).join("");
 }
 function setFilter(f){FILTER=f;render();}
+function setFilterM(f){FILTER_M=f;render();}
 
 function renderGantt(){
   const el=document.getElementById("gantt");
@@ -502,45 +647,36 @@ function renderGantt(){
   const axisMin=new Date(today.getFullYear(),today.getMonth()-18,1);
   const axisMax=new Date(today.getFullYear(),today.getMonth()+12,1);
   const inRange=d=>d&&d>=axisMin&&d<=axisMax;
-  // 各物件の候補日を集め、許容範囲内のものだけで時間軸を決める
   const allDates=[];
   view.forEach(p=>{
     ["買取契約日","残金決済日","リノベ開始日","リノベ完了日","販売開始日","売却完了日","再販契約日"].forEach(k=>{const d=pdate(p[k]);if(inRange(d))allDates.push(d);});
-    const z=pdate(p.残金決済日);if(z){const t=addDays(z,180);if(inRange(t))allDates.push(t);}
+    const z=pdate(p.残金決済日);if(z){const t=addDays(z,DEADLINE_DAYS);if(inRange(t))allDates.push(t);}
   });
   if(allDates.length===0){el.innerHTML=`<div class="empty" style="padding:20px">表示できる日付の物件がありません。スプレッドシートに買取契約日・リノベ開始日などを入力すると、ここに工期が表示されます。</div>`;return;}
   let minD=new Date(Math.min(...allDates)),maxD=new Date(Math.max(...allDates));
-  // 月初〜月末に丸め、前後に1ヶ月余白
   minD=new Date(minD.getFullYear(),minD.getMonth()-1,1);
   maxD=new Date(maxD.getFullYear(),maxD.getMonth()+2,1);
-  // 軸の許容範囲を超えないよう最終クランプ
   if(minD<axisMin)minD=axisMin;
   if(maxD>axisMax)maxD=axisMax;
   const total=maxD-minD;
-  const pct=d=>Math.max(0,Math.min(100,(d-minD)/total*100)); // 0〜100%に収める
+  const pct=d=>Math.max(0,Math.min(100,(d-minD)/total*100));
 
-  // 月の目盛り
   let months="";
   for(let m=new Date(minD);m<maxD;m=addMonths(m,1)){
     months+=`<div class="gantt-month" style="left:${pct(m)}%">${m.getMonth()+1}月${m.getMonth()===0?"<br>"+m.getFullYear():""}</div>`;
   }
-  // 今日ライン
   const todayLine=(today>=minD&&today<=maxD)?`<div class="gantt-today" style="left:${pct(today)}%"></div>`:"";
 
-  // セグメント定義：色は工程ごと
+  // セグメント定義：色は工程ごと。現況再販は工事のバーを描かない
   const seg=(p)=>{
     const out=[];
     const contract=pdate(p.買取契約日),settle=pdate(p.残金決済日);
     const rs=pdate(p.リノベ開始日),re=pdate(p.リノベ完了日);
     const ps=pdate(p.販売開始日),done=pdate(p.売却完了日);
     const rc=pdate(p.再販契約日);
-    // 仕入：買取契約〜仕入決済
     if(contract&&settle)out.push({s:contract,e:settle,color:"var(--blue)",label:"仕入"});
-    // リノベ：開始〜完了（完了がなければ今日まで）
-    if(rs)out.push({s:rs,e:re||today,color:"var(--amber)",label:"リノベ"});
-    // 販売：販売開始〜再販契約or売却完了（なければ今日まで）
+    if(rs&&hasWork(p))out.push({s:rs,e:re||today,color:"var(--amber)",label:workName(p)});
     if(ps)out.push({s:ps,e:rc||done||today,color:"var(--purple)",label:"販売"});
-    // 再販契約〜売却完了
     if(rc)out.push({s:rc,e:done||today,color:"var(--teal)",label:"契約後"});
     return out;
   };
@@ -551,17 +687,15 @@ function renderGantt(){
       const left=pct(g.s),width=Math.max(pct(g.e)-pct(g.s),0.5);
       return `<div class="gantt-bar" style="left:${left}%;width:${width}%;background:${g.color}">${g.label}</div>`;
     }).join("");
-    // 日程計画の節目マーカー（残金決済日起点）
     const settle=pdate(p.残金決済日);
     let plan="";
     if(settle){
-      SCHEDULE.forEach(sc=>{
+      schedule(p).forEach(sc=>{
         const t=addDays(settle,sc.days);
         if(t>=minD&&t<=maxD){
           if(sc.deadline){
-            // 180日=期限ライン（強調）。超過していれば赤
             const over=today>t&&p.フェーズ!=="売却完了";
-            plan+=`<div class="gantt-deadline ${over?'over':''}" style="left:${pct(t)}%" title="売却完了期限(決済+180日)${over?' ※超過':''}"></div>`;
+            plan+=`<div class="gantt-deadline ${over?'over':''}" style="left:${pct(t)}%" title="売却完了期限(決済+${DEADLINE_DAYS}日)${over?' ※超過':''}"></div>`;
           }else{
             plan+=`<div class="gantt-plan" style="left:${pct(t)}%" title="${sc.key}予定(決済+${sc.days}日)"></div>`;
           }
@@ -569,25 +703,25 @@ function renderGantt(){
       });
     }
     const alert=isAlert(p)?' style="color:var(--red);font-weight:600"':"";
-    const el=elapsedDays(p), dl=daysToDeadline(p);
+    const el2=elapsedDays(p), dl=daysToDeadline(p);
     let dayInfo="";
-    if(el!==null){
-      dayInfo=`<span style="font-size:10px;color:var(--hint);margin-left:6px">${el}日目${dl!==null?(dl<0?`/期限${-dl}日超`:`/残${dl}日`):""}</span>`;
+    if(el2!==null){
+      dayInfo=`<span style="font-size:10px;color:var(--hint);margin-left:6px">${el2}日目${dl!==null?(dl<0?`/期限${-dl}日超`:`/残${dl}日`):""}</span>`;
     }
-    return `<div class="gantt-row"><div class="gantt-label"${alert}>${esc(dispName(p))}${dayInfo}</div><div class="gantt-track">${months}${plan}${todayLine}${bars}</div></div>`;
+    return `<div class="gantt-row"><div class="gantt-label"${alert} title="${esc(method(p))}">${esc(dispName(p))}${dayInfo}</div><div class="gantt-track">${months}${plan}${todayLine}${bars}</div></div>`;
   }).join("");
 
   el.innerHTML=`<div class="gantt-row gantt-head"><div class="gantt-label">物件</div><div class="gantt-track" style="position:relative">${months}${todayLine}</div></div>${rows}
     <div class="gantt-legend">
       <span><i style="background:var(--blue)"></i>仕入（契約→決済）</span>
-      <span><i style="background:var(--amber)"></i>リノベ</span>
+      <span><i style="background:var(--amber)"></i>リノベ・解体</span>
       <span><i style="background:var(--purple)"></i>販売</span>
       <span><i style="background:var(--teal)"></i>再販契約</span>
       <span><i style="background:var(--red)"></i>今日</span>
       <span><i style="border-left:2px dotted var(--hint);width:0;height:12px"></i>各工程の予定日</span>
-      <span><i style="border-left:2px solid var(--red);width:0;height:12px"></i>180日期限</span>
+      <span><i style="border-left:2px solid var(--red);width:0;height:12px"></i>${DEADLINE_DAYS}日期限</span>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:8px">予定（点線）：決済+30日リノベ完了 / +37日販売開始 / +70・100日価格改定 / +130日再販契約 / +180日売却完了</div>`;
+    <div style="font-size:11px;color:var(--muted);margin-top:8px">予定（点線）は再販方式ごとに変わります。物件名にマウスを乗せると方式が出ます。</div>`;
 }
 
 function renderBoard(){
@@ -597,7 +731,7 @@ function renderBoard(){
     const items=view.filter(p=>p.フェーズ===ph);
     const cards=items.map(p=>cardHtml(p,DATA.indexOf(p))).join("")||`<div class="empty">―</div>`;
     return `<div class="col ${PHASE_CLASS[ph]}" data-phase="${ph}">
-      <div class="col-head"><span>${ph}</span><span class="cnt">${items.length}</span></div>${cards}</div>`;
+      <div class="col-head"><span>${phaseLabel(ph)}</span><span class="cnt">${items.length}</span></div>${cards}</div>`;
   }).join("");
 }
 
@@ -608,24 +742,29 @@ function cardHtml(p,index){
   if(done) priceRow=`<div class="row"><span class="k">成約</span><span class="v">${oku(num(p.成約価格))}</span></div>`;
   else if(listPrice(p)>0) priceRow=`<div class="row"><span class="k">売出</span><span class="v">${oku(listPrice(p))}</span></div>`;
   else priceRow=`<div class="row"><span class="k">取得</span><span class="v">${oku(num(p.取得価格))}</span></div>`;
-  const profitRow=pr>0?`<div class="row"><span class="k">${done?"確定利益":"想定粗利"}</span><span class="v profit">${oku(pr)}</span></div>`:"";
+  // 粗利：マイナスは赤字で表示、売価未入力なら理由を出す
+  let profitRow;
+  if(pr===null){
+    profitRow=`<div class="row"><span class="k">想定粗利</span><span class="v pending">売価未入力</span></div>`;
+  }else{
+    profitRow=`<div class="row"><span class="k">${done?"確定利益":"想定粗利"}</span><span class="v ${pr<0?"loss":"profit"}">${oku(pr)}</span></div>`;
+  }
   let badges=[];
   if(done){
-    badges.push(`<span class="badge ok">利益率 ${margin(p).toFixed(1)}%</span>`);
+    const mg=margin(p);
+    if(mg!==null) badges.push(`<span class="badge ${mg<0?"alert":"ok"}">利益率 ${mg.toFixed(1)}%</span>`);
   }else{
-    if(p.フェーズ==="リノベ中"&&num(p.リノベ実績)>num(p.リノベ予算)&&num(p.リノベ予算)>0)
-      badges.push(`<span class="badge warn">予算超過</span>`);
+    if(pr!==null&&pr<0) badges.push(`<span class="badge alert">粗利マイナス</span>`);
+    if(overBudget(p)) badges.push(`<span class="badge warn">${workName(p)}予算超過</span>`);
     const st=staleInfo(p);
     if(st) badges.push(`<span class="badge alert">${st.label}</span>`);
     if(needsPriceReview(p))
       badges.push(`<span class="badge alert">${priceReviewLabel(p)}</span>`);
     else{
-      // 改定直後（様子見期間中）は、いつ改定したかを表示する
       const since=daysSinceRevision(p);
       if(since!==null&&since>=0&&since<PRICE_COOLDOWN_DAYS)
         badges.push(`<span class="badge done">改定${since}日目</span>`);
     }
-    // 経過日数・期限の表示（決済日がある進行中物件）
     const el=elapsedDays(p), dl=daysToDeadline(p);
     if(el!==null) badges.push(`<span class="badge day">${el}日目</span>`);
     if(dl!==null){
@@ -635,33 +774,34 @@ function cardHtml(p,index){
   }
   const badge=badges.join(" ");
   const t=ptype(p);
+  const m=method(p);
   const band=`<div class="tband" style="background:var(${TYPE_FG[t]})"></div>`;
   const label=`<span class="tlabel" style="color:var(${TYPE_FG[t]})">${t}</span>`;
+  // リノベ再販は既定なのでタグを出さず、現況再販・解体更地だけ明示する
+  const mtag=m==="リノベ再販"?"":`<span class="mlabel" style="background:var(${METHOD_BG[m]});color:var(${METHOD_FG[m]})">${m}</span>`;
   return `<div class="pcard" onclick="openModal(${index})">
     ${band}
-    ${label}
+    ${label}${mtag}
     <div class="name">${esc(dispName(p))}</div>
     <div class="person">担当 ${esc(p.担当||"")}</div>
     ${priceRow}${profitRow}${badge}</div>`;
 }
 
 function openModal(i){
-  const p=DATA[i];const pr=profit(p);
-  // 日程アラート（赤帯）を組み立て
+  const p=DATA[i];const pr=profit(p);const m=method(p);const wk=workName(p);
   let alerts=[];
   const el=elapsedDays(p), dl=daysToDeadline(p);
+  if(pr!==null&&pr<0) alerts.push("粗利がマイナスです（売価が総コストを"+oku(-pr)+"下回っています）");
   if(needsPriceReview(p)) alerts.push(priceReviewLabel(p)+"（決済から"+el+"日経過）");
-  if(dl!==null&&dl<0) alerts.push("売却完了期限（180日）を"+(-dl)+"日超過しています");
+  if(dl!==null&&dl<0) alerts.push("売却完了期限（"+DEADLINE_DAYS+"日）を"+(-dl)+"日超過しています");
   else if(dl!==null&&dl<=30) alerts.push("売却完了期限まであと"+dl+"日です");
-  if(p.フェーズ==="リノベ中"&&num(p.リノベ実績)>num(p.リノベ予算)&&num(p.リノベ予算)>0) alerts.push("リノベ費が予算を超過しています");
+  if(overBudget(p)) alerts.push(wk+"費が予算を超過しています");
   const st=staleInfo(p);
   if(st) alerts.push(st.label+"動きがありません");
   const alertBox=alerts.length?`<div class="modal-alert">⚠ ${alerts.join("<br>⚠ ")}</div>`:"";
-  // 価格改定の様子見期間中の案内
   const since=daysSinceRevision(p);
   const infoBox=(!needsPriceReview(p)&&since!==null&&since>=0&&since<PRICE_COOLDOWN_DAYS)
     ? `<div class="modal-info">価格改定から${since}日目です。あと${PRICE_COOLDOWN_DAYS-since}日は反響を見る期間として、改定アラートを出しません。</div>` : "";
-  // 経過日数の行
   const dayRow=el!==null?`<tr><td>決済からの経過</td><td>${el}日目${dl!==null?(dl<0?`<span style="color:var(--red)">／期限${-dl}日超過</span>`:`／期限まで${dl}日`):""}</td></tr>`:"";
   // 価格変遷
   const v0=num(p.当初販売価格),v1=num(p["1回目改定価格"]),v2=num(p["2回目改定価格"]);
@@ -673,31 +813,43 @@ function openModal(i){
   if(v2>0) priceRows+=`<tr><td>2回目改定価格${d2?"（"+esc(d2)+"）":""}</td><td>${yen(v2)}</td></tr>`;
   if(v0>0||v1>0||v2>0) priceRows+=`<tr><td><b>現在の売出価格</b></td><td><b>${yen(cur)}</b></td></tr>`;
   else if(num(p.売出価格)>0) priceRows=`<tr><td>売出価格</td><td>${yen(num(p.売出価格))}</td></tr>`;
+  // 工事関連の行：現況再販では出さず、解体更地では「解体」表記にする
+  const workRows=hasWork(p)?`
+      <tr><td>${wk}開始日</td><td>${esc(p.リノベ開始日||"-")}</td></tr>
+      <tr><td>${wk}完了日</td><td>${esc(p.リノベ完了日||"-")}</td></tr>`:"";
+  const workCostRows=hasWork(p)?`
+      <tr><td>${wk}予算</td><td>${yen(num(p.リノベ予算))}</td></tr>
+      <tr><td>${wk}実績</td><td>${yen(num(p.リノベ実績))}</td></tr>`:"";
+  // 粗利・利益率
+  const mg=margin(p);
+  const profitCell=pr===null
+    ? `<span style="color:var(--hint);font-weight:400">売出価格が未入力のため算出できません</span>`
+    : `<span style="color:var(${pr<0?"--red":"--green"})">${yen(pr)}</span>`;
+  const marginCell=mg===null?"-":`<span style="color:var(${mg<0?"--red":"--text"})">${mg.toFixed(1)}%</span>`;
   document.getElementById("modal").innerHTML=`
     <h3>${esc(dispName(p))}</h3>
-    <div class="msub">${esc(ptype(p))} ／ ${esc(p.住所||"")} ／ 担当 ${esc(p.担当||"")}</div>
+    <div class="msub">${esc(ptype(p))} ／ ${esc(m)} ／ ${esc(p.住所||"")} ／ 担当 ${esc(p.担当||"")}</div>
     ${alertBox}${infoBox}
     <table>
       <tr><td>種別</td><td>${esc(ptype(p))}</td></tr>
+      <tr><td>再販方式</td><td>${esc(m)}${(p.再販方式||"").trim()?"":"<span style='color:var(--hint);font-weight:400'>（自動判定）</span>"}</td></tr>
       ${ptype(p)==="マンション"?`<tr><td>マンション名</td><td>${esc(p.マンション名||"-")}</td></tr><tr><td>部屋番号</td><td>${esc(p.部屋番号||"-")}</td></tr>`:""}
-      <tr><td>現フェーズ</td><td>${esc(p.フェーズ)}</td></tr>
+      <tr><td>現フェーズ</td><td>${esc(phaseLabel(p.フェーズ))}</td></tr>
       ${dayRow}
       <tr><td>買取契約日</td><td>${esc(p.買取契約日||"-")}</td></tr>
       <tr><td>残金決済日</td><td>${esc(p.残金決済日||"-")}</td></tr>
-      <tr><td>リノベ開始日</td><td>${esc(p.リノベ開始日||"-")}</td></tr>
-      <tr><td>リノベ完了日</td><td>${esc(p.リノベ完了日||"-")}</td></tr>
+      ${workRows}
       <tr><td>販売開始日</td><td>${esc(p.販売開始日||"-")}</td></tr>
       <tr><td>再販契約日</td><td>${esc(p.再販契約日||"-")}</td></tr>
       <tr><td>売却完了日</td><td>${esc(p.売却完了日||"-")}</td></tr>
       <tr><td>取得価格</td><td>${yen(num(p.取得価格))}</td></tr>
-      <tr><td>リノベ予算</td><td>${yen(num(p.リノベ予算))}</td></tr>
-      <tr><td>リノベ実績</td><td>${yen(num(p.リノベ実績))}</td></tr>
+      ${workCostRows}
       <tr><td>諸経費</td><td>${yen(num(p.諸経費))}</td></tr>
       <tr><td>総コスト</td><td>${yen(cost(p))}</td></tr>
       ${priceRows}
       <tr><td>成約価格</td><td>${num(p.成約価格)>0?yen(num(p.成約価格)):"-"}</td></tr>
-      <tr><td>${p.フェーズ==="売却完了"?"確定利益":"想定粗利"}</td><td>${pr>0?yen(pr):"-"}</td></tr>
-      <tr><td>利益率</td><td>${margin(p)>0?margin(p).toFixed(1)+"%":"-"}</td></tr>
+      <tr><td>${p.フェーズ==="売却完了"?"確定利益":"想定粗利"}</td><td>${profitCell}</td></tr>
+      <tr><td>利益率</td><td>${marginCell}</td></tr>
     </table>
     <button class="btn primary close" onclick="closeModal()">閉じる</button>`;
   document.getElementById("modalBg").classList.add("show");
@@ -724,7 +876,6 @@ function rowsToObjects(rows){
 
 function loadFromUrl(url){
   document.getElementById("err").textContent="読み込み中...";
-  // キャッシュ回避を強化：時刻＋乱数の二重の印を付け、ブラウザにも完全な再取得を指示
   const bust=(url.indexOf("?")>=0?"&":"?")+"_ts="+Date.now()+"_r="+Math.random().toString(36).slice(2);
   fetch(url+bust,{cache:"reload",headers:{"Cache-Control":"no-cache","Pragma":"no-cache"}})
     .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text()})
@@ -746,7 +897,6 @@ function toggleSetup(){const s=document.getElementById("setup");s.style.display=
 function toggleHelp(){const h=document.getElementById("help");h.style.display=h.style.display==="none"?"block":"none";}
 
 (function init(){
-  // 保存された設定があればそれを優先。なければ全員共通のデフォルトCSVを読み込む。
   const u=localStorage.getItem("baikai_csv_url")||DEFAULT_CSV_URL;
   document.getElementById("csvUrl").value=u;
   loadFromUrl(u);
